@@ -144,7 +144,7 @@ export default function SettingsScreen() {
 
           <Card padding="sm" style={{ marginBottom: 12 }}>
             <SettingsRow icon={<IconNurture size={19} color={Colors.primary} strokeWidth={2} />} label="EVV Configuration" onPress={() => {}} />
-            <SettingsRow icon={<IconVisit size={19} color={Colors.accent.orange} strokeWidth={2} />} label="Compliance Reports" onPress={() => {}} />
+            <SettingsRow icon={<IconVisit size={19} color={Colors.accent.orange} strokeWidth={2} />} label="Compliance Reports" onPress={() => router.push('/compliance')} />
             <SettingsRow icon={<IconComfort size={19} color={Colors.success} strokeWidth={2} />} label="Earnings History" onPress={() => {}} isLast />
           </Card>
 

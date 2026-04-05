@@ -10,6 +10,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import Colors from '@/constants/Colors';
 import { supabase } from '@/services/supabase';
 import { useAppStore } from '@/store/useAppStore';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -57,16 +58,18 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: Colors.background },
-          animation: 'fade',
-        }}
-      />
-    </View>
+    <ErrorBoundary>
+      <View style={styles.container}>
+        <StatusBar style="light" />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: Colors.background },
+            animation: 'fade',
+          }}
+        />
+      </View>
+    </ErrorBoundary>
   );
 }
 

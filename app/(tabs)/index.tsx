@@ -25,6 +25,8 @@ import { submitEVV } from '@/services/evv';
 import { enqueueEVV, processQueue } from '@/services/evvQueue';
 import { logVisitStarted, logVisitCompleted } from '@/services/familyActivity';
 import TaskLogger from '@/components/TaskLogger';
+import VisitNotes from '@/components/VisitNotes';
+import RecipientPicker from '@/components/RecipientPicker';
 import type { CareRecipient } from '@/types';
 
 interface StatItem {
@@ -265,6 +267,12 @@ export default function DashboardScreen() {
             />
           </View>
 
+          {/* Recipient Picker (shows if multiple recipients) */}
+          <RecipientPicker
+            selectedId={recipient?.id}
+            onSelect={(r) => setRecipient(r)}
+          />
+
           {/* Clock Button */}
           <ClockButton
             isClockedIn={isClockedIn}
@@ -306,9 +314,12 @@ export default function DashboardScreen() {
             </Card>
           )}
 
-          {/* Task Logger — shown while clocked in */}
+          {/* Task Logger + Notes — shown while clocked in */}
           {isClockedIn && activeVisit && (
-            <TaskLogger visitId={activeVisit.id} />
+            <>
+              <TaskLogger visitId={activeVisit.id} />
+              <VisitNotes visitId={activeVisit.id} />
+            </>
           )}
 
           {evvStatus === 'error' && (
