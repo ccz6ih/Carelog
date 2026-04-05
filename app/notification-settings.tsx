@@ -66,19 +66,23 @@ export default function NotificationSettingsScreen() {
 
   useEffect(() => {
     async function load() {
-      const { data } = await api.notifications.getPreferences(user?.id || '');
-      if (data) {
-        setPrefs({
-          visit_started: data.visit_started,
-          visit_completed: data.visit_completed,
-          task_logged: data.task_logged,
-          photo_shared: data.photo_shared,
-          medication_alert: data.medication_alert,
-          appreciation_received: data.appreciation_received,
-          evv_submitted: data.evv_submitted,
-          evv_error: data.evv_error,
-          weekly_summary: data.weekly_summary,
-        });
+      try {
+        const { data } = await api.notifications.getPreferences(user!.id);
+        if (data) {
+          setPrefs({
+            visit_started: data.visit_started,
+            visit_completed: data.visit_completed,
+            task_logged: data.task_logged,
+            photo_shared: data.photo_shared,
+            medication_alert: data.medication_alert,
+            appreciation_received: data.appreciation_received,
+            evv_submitted: data.evv_submitted,
+            evv_error: data.evv_error,
+            weekly_summary: data.weekly_summary,
+          });
+        }
+      } catch (e) {
+        console.error('[NotificationSettings]', e);
       }
       setLoading(false);
     }

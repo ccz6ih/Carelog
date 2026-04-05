@@ -56,16 +56,20 @@ export default function RecipientsScreen() {
   const [state, setState] = useState('');
 
   useEffect(() => {
-    loadRecipients();
+    if (user?.id) loadRecipients();
   }, [user?.id]);
 
   async function loadRecipients() {
-    const { data } = await supabase
-      .from('recipients')
-      .select('*')
-      .eq('caregiver_id', user?.id)
-      .order('created_at', { ascending: true });
-    if (data) setRecipients(data);
+    try {
+      const { data } = await supabase
+        .from('recipients')
+        .select('*')
+        .eq('caregiver_id', user!.id)
+        .order('created_at', { ascending: true });
+      if (data) setRecipients(data);
+    } catch (e) {
+      console.error('[Recipients]', e);
+    }
     setLoading(false);
   }
 

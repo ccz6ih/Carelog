@@ -45,46 +45,46 @@ export default function ComplianceScreen() {
 
   useEffect(() => {
     async function load() {
-      // Get EVV submissions for user's visits
-      const { data: visits } = await supabase
-        .from('visits')
-        .select('id')
-        .eq('caregiver_id', user?.id);
+      try {
+        const { data: visits } = await supabase
+          .from('visits')
+          .select('id')
+          .eq('caregiver_id', user!.id);
 
-      if (visits && visits.length > 0) {
-        const visitIds = visits.map((v) => v.id);
-        const { data: subs } = await supabase
-          .from('evv_submissions')
-          .select('*')
-          .in('visit_id', visitIds)
-          .order('created_at', { ascending: false })
-          .limit(50);
+        if (visits && visits.length > 0) {
+          const visitIds = visits.map((v) => v.id);
+          const { data: subs } = await supabase
+            .from('evv_submissions')
+            .select('*')
+            .in('visit_id', visitIds)
+            .order('created_at', { ascending: false })
+            .limit(50);
 
-        if (subs) {
-          setSubmissions(subs);
-          const successCount = subs.filter((s) => s.success).length;
-          const failedCount = subs.filter((s) => !s.success).length;
-          setStats({
-            total: subs.length,
-            success: successCount,
-            failed: failedCount,
-            pending: 0,
-          });
+          if (subs) {
+            setSubmissions(subs);
+            const successCount = subs.filter((s) => s.success).length;
+            const failedCount = subs.filter((s) => !s.success).length;
+            setStats({
+              total: subs.length,
+              success: successCount,
+              failed: failedCount,
+              pending: 0,
+            });
+          }
         }
+
+        const count = await getQueueCount();
+        setQueueCount(count);
+
+        const { count: pendingCount } = await supabase
+          .from('visits')
+          .select('*', { count: 'exact', head: true })
+          .eq('caregiver_id', user!.id)
+          .in('evv_status', ['clocked_out', 'error']);
+        setStats((prev) => ({ ...prev, pending: (pendingCount || 0) + count }));
+      } catch (e) {
+        console.error('[Compliance]', e);
       }
-
-      // Get offline queue count
-      const count = await getQueueCount();
-      setQueueCount(count);
-
-      // Get visits pending EVV
-      const { count: pendingCount } = await supabase
-        .from('visits')
-        .select('*', { count: 'exact', head: true })
-        .eq('caregiver_id', user?.id)
-        .in('evv_status', ['clocked_out', 'error']);
-      setStats((prev) => ({ ...prev, pending: (pendingCount || 0) + count }));
-
       setLoading(false);
     }
     if (user?.id) load();

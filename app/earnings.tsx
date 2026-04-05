@@ -37,60 +37,59 @@ export default function EarningsScreen() {
 
   useEffect(() => {
     async function load() {
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
+      try {
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
 
-      // Monthly visits
-      const { data: mVisits } = await supabase
-        .from('visits')
-        .select('clock_in_time, clock_out_time')
-        .eq('caregiver_id', user?.id)
-        .gte('created_at', startOfMonth.toISOString())
-        .not('clock_out_time', 'is', null);
+        const { data: mVisits } = await supabase
+          .from('visits')
+          .select('clock_in_time, clock_out_time')
+          .eq('caregiver_id', user!.id)
+          .gte('created_at', startOfMonth.toISOString())
+          .not('clock_out_time', 'is', null);
 
-      if (mVisits) {
-        setMonthlyVisits(mVisits.length);
-        let mins = 0;
-        mVisits.forEach((v) => {
-          mins += (new Date(v.clock_out_time).getTime() - new Date(v.clock_in_time).getTime()) / 60000;
-        });
-        setMonthlyHours(Math.round(mins / 60 * 10) / 10);
+        if (mVisits) {
+          setMonthlyVisits(mVisits.length);
+          let mins = 0;
+          mVisits.forEach((v) => {
+            mins += (new Date(v.clock_out_time).getTime() - new Date(v.clock_in_time).getTime()) / 60000;
+          });
+          setMonthlyHours(Math.round(mins / 60 * 10) / 10);
+        }
+
+        const { data: allVisits } = await supabase
+          .from('visits')
+          .select('clock_in_time, clock_out_time')
+          .eq('caregiver_id', user!.id)
+          .not('clock_out_time', 'is', null);
+
+        if (allVisits) {
+          setTotalVisits(allVisits.length);
+          let mins = 0;
+          allVisits.forEach((v) => {
+            mins += (new Date(v.clock_out_time).getTime() - new Date(v.clock_in_time).getTime()) / 60000;
+          });
+          setTotalHours(Math.round(mins / 60 * 10) / 10);
+        }
+
+        const { data: appreciationData } = await api.appreciation.getHistory(user!.id);
+        if (appreciationData) {
+          setAppreciationTotal(appreciationData.total);
+          setAppreciationThisMonth(appreciationData.thisMonth);
+        }
+
+        const { data: recent } = await supabase
+          .from('visits')
+          .select('id, clock_in_time, clock_out_time, recipients(first_name, relationship)')
+          .eq('caregiver_id', user!.id)
+          .not('clock_out_time', 'is', null)
+          .order('created_at', { ascending: false })
+          .limit(10);
+        if (recent) setRecentVisits(recent);
+      } catch (e) {
+        console.error('[Earnings]', e);
       }
-
-      // All-time visits
-      const { data: allVisits } = await supabase
-        .from('visits')
-        .select('clock_in_time, clock_out_time')
-        .eq('caregiver_id', user?.id)
-        .not('clock_out_time', 'is', null);
-
-      if (allVisits) {
-        setTotalVisits(allVisits.length);
-        let mins = 0;
-        allVisits.forEach((v) => {
-          mins += (new Date(v.clock_out_time).getTime() - new Date(v.clock_in_time).getTime()) / 60000;
-        });
-        setTotalHours(Math.round(mins / 60 * 10) / 10);
-      }
-
-      // Appreciation
-      const { data: appreciationData } = await api.appreciation.getHistory(user?.id || '');
-      if (appreciationData) {
-        setAppreciationTotal(appreciationData.total);
-        setAppreciationThisMonth(appreciationData.thisMonth);
-      }
-
-      // Recent visits for timeline
-      const { data: recent } = await supabase
-        .from('visits')
-        .select('id, clock_in_time, clock_out_time, recipients(first_name, relationship)')
-        .eq('caregiver_id', user?.id)
-        .not('clock_out_time', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(10);
-      if (recent) setRecentVisits(recent);
-
       setLoading(false);
     }
     if (user?.id) load();

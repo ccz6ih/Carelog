@@ -28,13 +28,17 @@ export default function VisitsScreen() {
 
   useEffect(() => {
     async function loadVisits() {
-      const { data } = await supabase
-        .from('visits')
-        .select('id, recipient_id, clock_in_time, clock_out_time, evv_status, recipients(first_name, last_name, relationship)')
-        .eq('caregiver_id', user?.id)
-        .order('created_at', { ascending: false })
-        .limit(50);
-      if (data) setVisits(data as VisitRow[]);
+      try {
+        const { data } = await supabase
+          .from('visits')
+          .select('id, recipient_id, clock_in_time, clock_out_time, evv_status, recipients(first_name, last_name, relationship)')
+          .eq('caregiver_id', user!.id)
+          .order('created_at', { ascending: false })
+          .limit(50);
+        if (data) setVisits(data as VisitRow[]);
+      } catch (e) {
+        console.error('[Visits]', e);
+      }
       setLoading(false);
     }
     if (user?.id) loadVisits();

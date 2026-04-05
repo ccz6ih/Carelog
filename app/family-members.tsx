@@ -51,26 +51,28 @@ export default function FamilyMembersScreen() {
   const [recipientOptions, setRecipientOptions] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
-    loadData();
+    if (user?.id) loadData();
   }, [user?.id]);
 
   async function loadData() {
-    // Get recipients for dropdown
-    const { data: recs } = await supabase
-      .from('recipients')
-      .select('id, first_name')
-      .eq('caregiver_id', user?.id);
-    if (recs) {
-      setRecipientOptions(recs.map((r) => ({ id: r.id, name: r.first_name })));
-      if (recs.length > 0 && !selectedRecipientId) setSelectedRecipientId(recs[0].id);
-    }
+    try {
+      const { data: recs } = await supabase
+        .from('recipients')
+        .select('id, first_name')
+        .eq('caregiver_id', user!.id);
+      if (recs) {
+        setRecipientOptions(recs.map((r) => ({ id: r.id, name: r.first_name })));
+        if (recs.length > 0 && !selectedRecipientId) setSelectedRecipientId(recs[0].id);
+      }
 
-    // Get family members
-    const { data: fam } = await supabase
-      .from('family_members')
-      .select('id, name, email, relationship, invite_accepted, recipients(first_name)')
-      .eq('invited_by', user?.id);
-    if (fam) setMembers(fam as FamilyRow[]);
+      const { data: fam } = await supabase
+        .from('family_members')
+        .select('id, name, email, relationship, invite_accepted, recipients(first_name)')
+        .eq('invited_by', user!.id);
+      if (fam) setMembers(fam as FamilyRow[]);
+    } catch (e) {
+      console.error('[FamilyMembers]', e);
+    }
     setLoading(false);
   }
 

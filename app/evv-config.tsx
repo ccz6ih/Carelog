@@ -41,12 +41,16 @@ export default function EVVConfigScreen() {
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase
-        .from('recipients')
-        .select('id, first_name, relationship, state, aggregator, provider_id, recipient_id')
-        .eq('caregiver_id', user?.id)
-        .eq('is_active', true);
-      if (data) setRecipients(data);
+      try {
+        const { data } = await supabase
+          .from('recipients')
+          .select('id, first_name, relationship, state, aggregator, provider_id, recipient_id')
+          .eq('caregiver_id', user!.id)
+          .eq('is_active', true);
+        if (data) setRecipients(data);
+      } catch (e) {
+        console.error('[EVVConfig]', e);
+      }
       setLoading(false);
     }
     if (user?.id) load();
