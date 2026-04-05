@@ -146,6 +146,11 @@ export default function RecipientsScreen() {
             Each recipient is linked to your Medicaid provider ID for EVV auto-submit.
           </Text>
 
+          {/* Debug info — remove after fixing */}
+          <Text style={[Typography.micro, { color: Colors.textMuted, marginBottom: 8 }]}>
+            Auth: {ready ? 'ready' : 'waiting'} | User: {userId ? userId.slice(0, 8) + '...' : 'none'} | Items: {recipients.length}
+          </Text>
+
           {loading ? (
             <ActivityIndicator color={Colors.primary} size="large" style={{ marginTop: 40 }} />
           ) : (
