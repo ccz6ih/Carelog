@@ -26,6 +26,8 @@ import { enqueueEVV, processQueue } from '@/services/evvQueue';
 import { logVisitStarted, logVisitCompleted } from '@/services/familyActivity';
 import TaskLogger from '@/components/TaskLogger';
 import VisitNotes from '@/components/VisitNotes';
+import PhotoCapture from '@/components/PhotoCapture';
+import MedicationLogger from '@/components/MedicationLogger';
 import RecipientPicker from '@/components/RecipientPicker';
 import type { CareRecipient } from '@/types';
 
@@ -318,6 +320,8 @@ export default function DashboardScreen() {
           {isClockedIn && activeVisit && (
             <>
               <TaskLogger visitId={activeVisit.id} />
+              <MedicationLogger visitId={activeVisit.id} recipientId={activeVisit.recipientId} />
+              <PhotoCapture visitId={activeVisit.id} />
               <VisitNotes visitId={activeVisit.id} />
             </>
           )}

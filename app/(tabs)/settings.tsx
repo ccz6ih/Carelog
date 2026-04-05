@@ -149,7 +149,7 @@ export default function SettingsScreen() {
           </Card>
 
           <Card padding="sm" style={{ marginBottom: 24 }}>
-            <SettingsRow icon={<IconCaregiver size={19} color={Colors.primary} strokeWidth={2} />} label="Security" value="HIPAA · AES-256" onPress={() => {}} />
+            <SettingsRow icon={<IconCaregiver size={19} color={Colors.primary} strokeWidth={2} />} label="Security" value="HIPAA · AES-256" onPress={() => router.push('/security')} />
             <SettingsRow icon={<IconHeart size={19} color={Colors.accent.pink} strokeWidth={2} />} label="Notifications" onPress={() => router.push('/notification-settings')} />
             <SettingsRow icon={<IconGroup size={19} color={Colors.accent.purple} strokeWidth={2} />} label="Help & Support" onPress={() => {}} isLast />
           </Card>

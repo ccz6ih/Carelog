@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Platform,
+  Alert,
 } from 'react-native';
 import { router } from 'expo-router';
 import Colors from '@/constants/Colors';
@@ -19,9 +20,10 @@ import Typography from '@/constants/Typography';
 import Layout from '@/constants/Layout';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
+import Button from '@/components/ui/Button';
 import { useAppStore } from '@/store/useAppStore';
 import { supabase } from '@/services/supabase';
-import { getQueueCount } from '@/services/evvQueue';
+import { getQueueCount, processQueue } from '@/services/evvQueue';
 
 interface SubmissionRow {
   id: string;
@@ -149,7 +151,7 @@ export default function ComplianceScreen() {
                 </Card>
               </View>
 
-              {/* Queue status */}
+              {/* Queue status + retry */}
               {queueCount > 0 && (
                 <Card borderColor={Colors.warning} style={{ marginTop: 16, marginBottom: 8 }}>
                   <View style={styles.queueBanner}>
@@ -165,6 +167,21 @@ export default function ComplianceScreen() {
                       </Text>
                     </View>
                   </View>
+                  <Button
+                    title="Retry Now"
+                    variant="outline"
+                    size="sm"
+                    style={{ marginTop: 12 }}
+                    onPress={async () => {
+                      const result = await processQueue();
+                      const count = await getQueueCount();
+                      setQueueCount(count);
+                      const msg = result.succeeded > 0
+                        ? `${result.succeeded} submission${result.succeeded !== 1 ? 's' : ''} succeeded!`
+                        : 'Retry attempted — submissions still pending.';
+                      Platform.OS === 'web' ? alert(msg) : Alert.alert('Retry Complete', msg);
+                    }}
+                  />
                 </Card>
               )}
 

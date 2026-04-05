@@ -79,6 +79,27 @@ export default function FamilyScreen() {
         if (activityData) setActivities(activityData);
       }
       setLoading(false);
+
+      // Subscribe to realtime inserts for live feed
+      if (recipients && recipients.length > 0) {
+        const channel = supabase
+          .channel('family-activity')
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'family_activity',
+              filter: `recipient_id=eq.${recipients[0].id}`,
+            },
+            (payload) => {
+              setActivities((prev) => [payload.new as ActivityItem, ...prev]);
+            }
+          )
+          .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
+      }
     }
     if (user?.id) loadActivity();
   }, [user?.id]);
