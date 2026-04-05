@@ -19,6 +19,7 @@ import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import ClockButton from '@/components/ClockButton';
 import { useAppStore } from '@/store/useAppStore';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/services/supabase';
 import { useLocation } from '@/hooks/useLocation';
 import { submitEVV } from '@/services/evv';
@@ -50,6 +51,7 @@ export default function DashboardScreen() {
     setElapsed,
   } = useAppStore();
 
+  const { userId, ready } = useAuth();
   const { getLocation } = useLocation();
   const [recipient, setRecipient] = useState<CareRecipient | null>(null);
   const [stats, setStats] = useState<StatItem[]>([
@@ -77,10 +79,11 @@ export default function DashboardScreen() {
         const { data } = await supabase
           .from('recipients')
           .select('*')
-          .eq('caregiver_id', user!.id)
+          .eq('caregiver_id', userId!)
           .eq('is_active', true)
           .order('created_at', { ascending: true });
 
+        console.log('[Dashboard] Recipients loaded:', data?.length);
         if (data && data.length > 0) {
           const r = data[0];
           setRecipient({
@@ -98,8 +101,8 @@ export default function DashboardScreen() {
         console.error('[Dashboard] loadRecipient', e);
       }
     }
-    if (user?.id) loadRecipient();
-  }, [user?.id]);
+    if (ready && userId) loadRecipient();
+  }, [ready, userId]);
 
   // Load monthly stats
   useEffect(() => {
@@ -111,7 +114,7 @@ export default function DashboardScreen() {
       const { data: monthVisits } = await supabase
         .from('visits')
         .select('clock_in_time, clock_out_time, evv_status')
-        .eq('caregiver_id', user?.id)
+        .eq('caregiver_id', userId!)
         .gte('created_at', startOfMonth.toISOString());
 
       if (monthVisits) {
@@ -133,8 +136,8 @@ export default function DashboardScreen() {
         ]);
       }
     }
-    if (user?.id) loadStats();
-  }, [user?.id, evvStatus]);
+    if (ready && userId) loadStats();
+  }, [ready, userId, evvStatus]);
 
   // Timer tick
   useEffect(() => {
@@ -225,13 +228,13 @@ export default function DashboardScreen() {
         ? `${recipient.relationship.charAt(0).toUpperCase() + recipient.relationship.slice(1)} (${recipient.firstName})`
         : `${recipient.firstName} ${recipient.lastName}`.trim();
 
-      if (!user?.id) {
+      if (!userId) {
         alert('Not signed in. Please sign out and sign back in.');
         return;
       }
 
       const visitData = {
-        caregiver_id: user.id,
+        caregiver_id: userId,
         recipient_id: recipient.id,
         clock_in_lat: loc?.lat || null,
         clock_in_lng: loc?.lng || null,
