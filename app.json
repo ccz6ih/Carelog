@@ -1,0 +1,52 @@
+{
+  "expo": {
+    "name": "CareLog",
+    "slug": "carelog",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "carelog",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B1622"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.carelog.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "CareLog needs your location for EVV clock-in/out compliance.",
+        "NSLocationAlwaysUsageDescription": "CareLog uses background location for accurate visit tracking."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#0B1622"
+      },
+      "package": "com.carelog.app",
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "CareLog uses your location for EVV compliance verification."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
