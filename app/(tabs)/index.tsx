@@ -22,6 +22,9 @@ import { useAppStore } from '@/store/useAppStore';
 import { supabase } from '@/services/supabase';
 import { useLocation } from '@/hooks/useLocation';
 import { submitEVV } from '@/services/evv';
+import { enqueueEVV, processQueue } from '@/services/evvQueue';
+import { logVisitStarted, logVisitCompleted } from '@/services/familyActivity';
+import TaskLogger from '@/components/TaskLogger';
 import type { CareRecipient } from '@/types';
 
 interface StatItem {
@@ -52,6 +55,15 @@ export default function DashboardScreen() {
   ]);
 
   const isClockedIn = evvStatus === 'clocked_in';
+
+  // Process EVV retry queue on mount
+  useEffect(() => {
+    processQueue().then((result) => {
+      if (result.succeeded > 0) {
+        console.log(`[EVV Queue] Retried ${result.processed}, succeeded ${result.succeeded}`);
+      }
+    });
+  }, []);
 
   // Load first recipient
   useEffect(() => {
@@ -165,7 +177,17 @@ export default function DashboardScreen() {
               success: true,
               confirmation_id: result.confirmationId,
             });
+          } else {
+            // Queue for offline retry
+            await enqueueEVV(updatedVisit, recipient);
           }
+
+          // Log family activity
+          const ms = new Date(clockOutTime).getTime() - new Date(activeVisit.clockInTime).getTime();
+          const durationStr = `${Math.floor(ms / 3600000)}h ${Math.floor((ms % 3600000) / 60000)}m`;
+          const caregiverName = `${user?.firstName || 'Caregiver'}`;
+          await logVisitCompleted(recipient.id, activeVisit.id, caregiverName, durationStr);
+
           setTimeout(() => endVisit(), 2500);
         } else {
           setEVVStatus('submitted');
@@ -209,6 +231,9 @@ export default function DashboardScreen() {
         photos: [],
         evvStatus: 'clocked_in',
       });
+
+      // Log family activity
+      await logVisitStarted(recipient.id, newVisit.id, `${user?.firstName || 'Caregiver'}`);
     }
   };
 
@@ -279,6 +304,11 @@ export default function DashboardScreen() {
                 </View>
               </View>
             </Card>
+          )}
+
+          {/* Task Logger — shown while clocked in */}
+          {isClockedIn && activeVisit && (
+            <TaskLogger visitId={activeVisit.id} />
           )}
 
           {evvStatus === 'error' && (

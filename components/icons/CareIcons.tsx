@@ -12,7 +12,7 @@ interface IconProps {
   strokeWidth?: number;
 }
 
-const defaults = { size: 24, color: Colors.primary, strokeWidth: 2.5 };
+const defaults = { size: 28, color: Colors.primary, strokeWidth: 2.5 };
 
 // Icon 1: Hands comfort/massage — used for Dashboard
 export function IconComfort({ size = defaults.size, color = defaults.color, strokeWidth = defaults.strokeWidth }: IconProps) {

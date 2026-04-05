@@ -11,7 +11,7 @@ import { IconComfort, IconVisit, IconHeart, IconNurture } from '@/components/ico
 
 function TabIcon({ name, focused }: { name: string; focused: boolean }) {
   const color = focused ? Colors.tabBar.active : Colors.tabBar.inactive;
-  const size = 22;
+  const size = 26;
 
   const icons: Record<string, React.ReactNode> = {
     Dashboard: <IconComfort size={size} color={color} strokeWidth={2} />,

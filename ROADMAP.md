@@ -1,40 +1,47 @@
 # CareLog Product Roadmap
 
-## Phase 1 — MVP (Current Sprint)
+## Phase 1 — MVP ✅
 **Goal:** Working app with real auth, real data, and deployable web build.
 
 - [x] Project scaffolding (Expo Router, tabs, auth flow)
 - [x] Design system (Colors, Typography, Layout constants)
 - [x] UI components (ClockButton, VisitCard, Button, Card, Badge)
+- [x] Hand-drawn SVG icon set (6 comfort/care illustrations)
 - [x] All screen layouts (Dashboard, Visits, Family, Settings)
 - [x] Zustand state management
 - [x] Supabase client + env configuration
-- [x] Database schema + RLS policies
+- [x] Database schema + RLS policies (8 tables, full migration)
 - [x] API service layer (services/api.ts → Supabase)
-- [ ] Wire auth (login/signup → Supabase Auth)
-- [ ] Wire onboarding (recipient creation → recipients table)
-- [ ] Wire clock in/out (→ visits table, real GPS)
-- [ ] Wire visit history (→ query visits table)
-- [ ] Wire family activity feed (→ query family_activity table)
-- [ ] Placeholder assets (icon, splash, favicon)
-- [ ] Deploy web build to Vercel
-- [ ] Run Supabase migration on project
+- [x] Wire auth (login/signup → Supabase Auth)
+- [x] Wire onboarding (recipient creation → recipients table)
+- [x] Wire clock in/out (→ visits table, real GPS)
+- [x] Wire visit history (→ query visits table)
+- [x] Wire family activity feed (→ query family_activity table)
+- [x] Placeholder assets (icon, splash, favicon)
+- [x] Deploy web build to Vercel
+- [x] Run Supabase migration on project
+- [ ] Persist auth state across app reloads
+- [ ] Supabase auth listener (auto-restore session)
 
-## Phase 2 — EVV Integration
+## Phase 2 — EVV Integration (In Progress)
 **Goal:** Auto-submit EVV data to state aggregators on clock-out.
 
-- [ ] EVV aggregator auth (OAuth2 for HHAeXchange, Sandata)
-- [ ] EVV payload formatting per aggregator API spec
-- [ ] EVV submission on clock-out (automatic)
-- [ ] EVV audit trail (evv_submissions table)
+- [x] EVV aggregator configs (4 APIs × 37 states)
+- [x] EVV payload builder (6 data points)
+- [x] EVV submission on clock-out (automatic)
+- [x] EVV status indicators in UI (submitted, pending, error)
+- [ ] EVV audit trail (evv_submissions table — wired but needs real API)
 - [ ] Offline queue with AsyncStorage (retry on reconnect)
 - [ ] Exponential backoff for failed submissions
-- [ ] EVV status indicators in UI (submitted, pending, error)
-- [ ] Compliance dashboard (submission history, success rate)
+- [ ] Compliance dashboard screen (submission history, success rate)
+- [ ] EVV aggregator auth (OAuth2 for HHAeXchange, Sandata) — requires vendor partnerships
 
-## Phase 3 — Family Portal
+## Phase 3 — Family Portal (In Progress)
 **Goal:** Family members can view care activity and send appreciation.
 
+- [x] Family activity feed UI (queries family_activity table)
+- [x] Appreciation modal UI (amount selection)
+- [ ] Auto-create family_activity entries on clock in/out
 - [ ] Family member invite flow (email invite → accept)
 - [ ] Real-time activity feed (Supabase Realtime subscriptions)
 - [ ] Push notifications to family on visit events
@@ -45,9 +52,9 @@
 ## Phase 4 — Enhanced Care Logging
 **Goal:** Rich visit documentation beyond clock in/out.
 
-- [ ] Task logging UI (checklist during visits)
+- [ ] Task logging UI (checklist during active visits)
+- [ ] Visit notes input on dashboard
 - [ ] Photo capture during visits (expo-image-picker)
-- [ ] Visit notes (rich text)
 - [ ] Care plan templates (pre-defined task lists)
 - [ ] Medication reminders + logging
 - [ ] Multi-recipient support (switch between care recipients)
@@ -65,6 +72,8 @@
 ## Phase 6 — Polish & Launch
 **Goal:** App store submission and production hardening.
 
+- [x] Hand-drawn icon set integrated
+- [x] Enterprise-grade UI overhaul (glassmorphism, responsive)
 - [ ] Custom app icon and splash screen (professional design)
 - [ ] Onboarding tutorial / walkthrough
 - [ ] Sentry error tracking
@@ -76,11 +85,10 @@
 - [ ] Security audit
 
 ## Technical Debt
+- [ ] Error boundary components
+- [ ] Loading/skeleton states for all screens
 - [ ] Add unit tests (Jest + React Native Testing Library)
 - [ ] Add E2E tests (Detox or Maestro)
 - [ ] CI/CD pipeline (GitHub Actions)
 - [ ] Supabase Edge Functions for server-side logic
 - [ ] Generated Supabase types (supabase gen types)
-- [ ] Remove all hardcoded mock data
-- [ ] Error boundary components
-- [ ] Loading/skeleton states for all screens

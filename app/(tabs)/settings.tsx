@@ -128,30 +128,30 @@ export default function SettingsScreen() {
           {/* Groups */}
           <Card padding="sm" style={{ marginBottom: 12 }}>
             <SettingsRow
-              icon={<IconCaregiver size={16} color={Colors.primary} strokeWidth={2} />}
+              icon={<IconCaregiver size={19} color={Colors.primary} strokeWidth={2} />}
               label="Care Recipients"
               value={`${recipientCount} recipient${recipientCount !== 1 ? 's' : ''}`}
               onPress={() => {}}
             />
             <SettingsRow
-              icon={<IconGroup size={16} color={Colors.accent.purple} strokeWidth={2} />}
+              icon={<IconGroup size={19} color={Colors.accent.purple} strokeWidth={2} />}
               label="Family Members"
               value={`${familyCount} viewer${familyCount !== 1 ? 's' : ''} connected`}
               onPress={() => {}}
             />
-            <SettingsRow icon={<IconHeart size={16} color={Colors.accent.orange} strokeWidth={2} />} label="Subscription" value="Basic · $19.99/mo" onPress={() => {}} isLast />
+            <SettingsRow icon={<IconHeart size={19} color={Colors.accent.orange} strokeWidth={2} />} label="Subscription" value="Basic · $19.99/mo" onPress={() => {}} isLast />
           </Card>
 
           <Card padding="sm" style={{ marginBottom: 12 }}>
-            <SettingsRow icon={<IconNurture size={16} color={Colors.primary} strokeWidth={2} />} label="EVV Configuration" onPress={() => {}} />
-            <SettingsRow icon={<IconVisit size={16} color={Colors.accent.orange} strokeWidth={2} />} label="Compliance Reports" onPress={() => {}} />
-            <SettingsRow icon={<IconComfort size={16} color={Colors.success} strokeWidth={2} />} label="Earnings History" onPress={() => {}} isLast />
+            <SettingsRow icon={<IconNurture size={19} color={Colors.primary} strokeWidth={2} />} label="EVV Configuration" onPress={() => {}} />
+            <SettingsRow icon={<IconVisit size={19} color={Colors.accent.orange} strokeWidth={2} />} label="Compliance Reports" onPress={() => {}} />
+            <SettingsRow icon={<IconComfort size={19} color={Colors.success} strokeWidth={2} />} label="Earnings History" onPress={() => {}} isLast />
           </Card>
 
           <Card padding="sm" style={{ marginBottom: 24 }}>
-            <SettingsRow icon={<IconCaregiver size={16} color={Colors.primary} strokeWidth={2} />} label="Security" value="HIPAA · AES-256" onPress={() => {}} />
-            <SettingsRow icon={<IconHeart size={16} color={Colors.accent.pink} strokeWidth={2} />} label="Notifications" onPress={() => {}} />
-            <SettingsRow icon={<IconGroup size={16} color={Colors.accent.purple} strokeWidth={2} />} label="Help & Support" onPress={() => {}} isLast />
+            <SettingsRow icon={<IconCaregiver size={19} color={Colors.primary} strokeWidth={2} />} label="Security" value="HIPAA · AES-256" onPress={() => {}} />
+            <SettingsRow icon={<IconHeart size={19} color={Colors.accent.pink} strokeWidth={2} />} label="Notifications" onPress={() => {}} />
+            <SettingsRow icon={<IconGroup size={19} color={Colors.accent.purple} strokeWidth={2} />} label="Help & Support" onPress={() => {}} isLast />
           </Card>
 
           <Button

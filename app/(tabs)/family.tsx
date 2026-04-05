@@ -13,6 +13,7 @@ import {
   Modal,
   ActivityIndicator,
   Platform,
+  Linking,
 } from 'react-native';
 import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
@@ -86,12 +87,34 @@ export default function FamilyScreen() {
     return new Date(timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   };
 
-  const handleSendAppreciation = () => {
+  const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
+
+  const PAYMENT_OPTIONS = [
+    { id: 'venmo', label: 'Venmo', urlScheme: (amount: number) => `venmo://paycharge?txn=pay&amount=${amount}&note=CareLog%20Appreciation` },
+    { id: 'cashapp', label: 'Cash App', urlScheme: (amount: number) => `cashapp://cash.app/pay?amount=${amount}&note=CareLog` },
+    { id: 'zelle', label: 'Zelle', urlScheme: () => `zelle://` },
+    { id: 'paypal', label: 'PayPal', urlScheme: (amount: number) => `paypal://paypalme/?amount=${amount}` },
+  ];
+
+  const handleSendAppreciation = async () => {
+    if (!selectedAmount) return;
+
+    // Try to open payment app
+    const method = PAYMENT_OPTIONS.find((p) => p.id === (paymentMethod || 'venmo'));
+    if (method) {
+      const url = method.urlScheme(selectedAmount);
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+      }
+    }
+
     setSent(true);
     setTimeout(() => {
       setShowAppreciation(false);
       setSent(false);
       setSelectedAmount(null);
+      setPaymentMethod(null);
     }, 2000);
   };
 
@@ -209,9 +232,28 @@ export default function FamilyScreen() {
                       ))}
                     </View>
 
-                    <Text style={[Typography.micro, { color: Colors.textMuted, textAlign: 'center', marginTop: 16, letterSpacing: 1, textTransform: 'uppercase' }]}>
-                      Routes to Venmo · Zelle · PayPal · Cash App
-                    </Text>
+                    <View style={styles.paymentRow}>
+                      {PAYMENT_OPTIONS.map((p) => (
+                        <TouchableOpacity
+                          key={p.id}
+                          onPress={() => setPaymentMethod(p.id)}
+                          style={[
+                            styles.paymentBtn,
+                            paymentMethod === p.id && styles.paymentBtnActive,
+                          ]}
+                        >
+                          <Text style={[
+                            Typography.micro,
+                            {
+                              color: paymentMethod === p.id ? Colors.primary : Colors.textMuted,
+                              letterSpacing: 0.5,
+                            },
+                          ]}>
+                            {p.label}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
 
                     <View style={{ gap: 8, marginTop: 24 }}>
                       <Button
@@ -336,5 +378,23 @@ const styles = StyleSheet.create({
   amountBtnActive: {
     borderColor: Colors.primary,
     backgroundColor: Colors.primary,
+  },
+  paymentRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 16,
+    flexWrap: 'wrap',
+  },
+  paymentBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: Layout.radius.full,
+    borderWidth: 1,
+    borderColor: Colors.border.cardHover,
+  },
+  paymentBtnActive: {
+    borderColor: Colors.primary + '60',
+    backgroundColor: Colors.primary + '10',
   },
 });
