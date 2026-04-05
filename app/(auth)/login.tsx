@@ -71,17 +71,17 @@ export default function LoginScreen() {
   };
 
   const handleSignUp = async () => {
+    if (!isSignUp) {
+      setIsSignUp(true);
+      return;
+    }
+
     if (!email || !password) {
       Alert.alert('Missing Fields', 'Please enter your email and password.');
       return;
     }
-    if (isSignUp && (!firstName || !lastName)) {
+    if (!firstName || !lastName) {
       Alert.alert('Missing Fields', 'Please enter your first and last name.');
-      return;
-    }
-
-    if (!isSignUp) {
-      setIsSignUp(true);
       return;
     }
 
