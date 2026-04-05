@@ -2,7 +2,7 @@
  * CareLog Settings Screen
  * Account, subscription tier, recipients, security
  */
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import { useAppStore } from '@/store/useAppStore';
+import { supabase } from '@/services/supabase';
 
 interface SettingsRowProps {
   icon: string;
@@ -52,8 +53,36 @@ function SettingsRow({ icon, label, value, onPress }: SettingsRowProps) {
 
 export default function SettingsScreen() {
   const { user, logout } = useAppStore();
+  const [recipientCount, setRecipientCount] = useState(0);
+  const [familyCount, setFamilyCount] = useState(0);
 
-  const handleLogout = () => {
+  useEffect(() => {
+    async function loadCounts() {
+      const { count: rCount } = await supabase
+        .from('recipients')
+        .select('*', { count: 'exact', head: true })
+        .eq('caregiver_id', user?.id);
+      if (rCount !== null) setRecipientCount(rCount);
+
+      // Get family members across all recipients
+      const { data: recipients } = await supabase
+        .from('recipients')
+        .select('id')
+        .eq('caregiver_id', user?.id);
+      if (recipients && recipients.length > 0) {
+        const ids = recipients.map((r) => r.id);
+        const { count: fCount } = await supabase
+          .from('family_members')
+          .select('*', { count: 'exact', head: true })
+          .in('recipient_id', ids);
+        if (fCount !== null) setFamilyCount(fCount);
+      }
+    }
+    if (user?.id) loadCounts();
+  }, [user?.id]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     logout();
     router.replace('/(auth)/login');
   };
@@ -89,13 +118,23 @@ export default function SettingsScreen() {
 
         {/* Settings Groups */}
         <Card style={{ marginBottom: 16 }}>
-          <SettingsRow icon="👩‍⚕️" label="Care Recipients" value="1 recipient" onPress={() => {}} />
-          <SettingsRow icon="👨‍👩‍👧" label="Family Members" value="1 viewer connected" onPress={() => {}} />
+          <SettingsRow
+            icon="👩‍⚕️"
+            label="Care Recipients"
+            value={`${recipientCount} recipient${recipientCount !== 1 ? 's' : ''}`}
+            onPress={() => {}}
+          />
+          <SettingsRow
+            icon="👨‍👩‍👧"
+            label="Family Members"
+            value={`${familyCount} viewer${familyCount !== 1 ? 's' : ''} connected`}
+            onPress={() => {}}
+          />
           <SettingsRow icon="💎" label="Subscription" value="Basic · $19.99/mo" onPress={() => {}} />
         </Card>
 
         <Card style={{ marginBottom: 16 }}>
-          <SettingsRow icon="🏥" label="EVV Configuration" value="HHAeXchange · Florida" onPress={() => {}} />
+          <SettingsRow icon="🏥" label="EVV Configuration" onPress={() => {}} />
           <SettingsRow icon="📊" label="Compliance Reports" onPress={() => {}} />
           <SettingsRow icon="💰" label="Earnings History" onPress={() => {}} />
         </Card>

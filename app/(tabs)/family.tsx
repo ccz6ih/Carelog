@@ -3,7 +3,7 @@
  * The retention moat. Family members see visit activity.
  * "Send Appreciation" — the subscription offsetter.
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,27 +12,75 @@ import {
   SafeAreaView,
   TouchableOpacity,
   Modal,
+  ActivityIndicator,
 } from 'react-native';
 import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
 import Layout from '@/constants/Layout';
 import Card from '@/components/ui/Card';
-import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
+import { useAppStore } from '@/store/useAppStore';
+import { supabase } from '@/services/supabase';
 
-const FAMILY_ACTIVITY = [
-  { id: '1', type: 'visit', text: 'Maria started her visit with Mom', time: '9:02 AM', icon: '🔔' },
-  { id: '2', type: 'task', text: 'Personal care ✓ · Meals ✓ · Medications ✓', time: '11:30 AM', icon: '📋' },
-  { id: '3', type: 'photo', text: 'Maria shared a photo from the visit', time: '12:15 PM', icon: '📸' },
-  { id: '4', type: 'complete', text: 'Maria completed a 4-hour visit with Mom', time: '1:14 PM', icon: '✅' },
-];
+interface ActivityItem {
+  id: string;
+  activity_type: string;
+  summary: string;
+  actor_name: string;
+  created_at: string;
+}
+
+const ACTIVITY_ICONS: Record<string, string> = {
+  visit_started: '🔔',
+  visit_completed: '✅',
+  task_logged: '📋',
+  photo_shared: '📸',
+};
 
 const APPRECIATION_AMOUNTS = [10, 25, 50];
 
 export default function FamilyScreen() {
+  const user = useAppStore((s) => s.user);
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [recipientName, setRecipientName] = useState('');
   const [showAppreciation, setShowAppreciation] = useState(false);
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [sent, setSent] = useState(false);
+
+  useEffect(() => {
+    async function loadActivity() {
+      // Get first recipient to load their activity
+      const { data: recipients } = await supabase
+        .from('recipients')
+        .select('id, first_name, relationship')
+        .eq('caregiver_id', user?.id)
+        .eq('is_active', true)
+        .limit(1);
+
+      if (recipients && recipients.length > 0) {
+        const r = recipients[0];
+        const rel = r.relationship ? r.relationship.charAt(0).toUpperCase() + r.relationship.slice(1) : '';
+        setRecipientName(rel ? `${rel}'s` : `${r.first_name}'s`);
+
+        const { data: activityData } = await supabase
+          .from('family_activity')
+          .select('*')
+          .eq('recipient_id', r.id)
+          .order('created_at', { ascending: false })
+          .limit(20);
+
+        if (activityData) setActivities(activityData);
+      }
+      setLoading(false);
+    }
+    if (user?.id) loadActivity();
+  }, [user?.id]);
+
+  const formatTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  };
 
   const handleSendAppreciation = () => {
     setSent(true);
@@ -50,32 +98,48 @@ export default function FamilyScreen() {
           FAMILY PORTAL
         </Text>
         <Text style={[Typography.h1, { color: Colors.textPrimary, marginTop: 4 }]}>
-          Mom's Care Feed
+          {recipientName || "Family"} Care Feed
         </Text>
         <Text style={[Typography.bodySm, { color: Colors.textSecondary, marginTop: 4, marginBottom: 24 }]}>
-          Real-time updates from Maria's visits
+          Real-time updates from visits
         </Text>
 
         {/* Activity Feed */}
-        {FAMILY_ACTIVITY.map((activity) => (
-          <Card
-            key={activity.id}
-            borderColor={activity.type === 'complete' ? Colors.success : Colors.border.default}
-            style={{ marginBottom: 12 }}
-          >
-            <View style={styles.activityRow}>
-              <Text style={{ fontSize: 20 }}>{activity.icon}</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={[Typography.body, { color: Colors.textPrimary }]}>
-                  {activity.text}
+        {loading ? (
+          <ActivityIndicator color={Colors.primary} size="large" style={{ marginTop: 40 }} />
+        ) : activities.length === 0 ? (
+          <View style={styles.empty}>
+            <Text style={{ fontSize: 48 }}>👨‍👩‍👧</Text>
+            <Text style={[Typography.h3, { color: Colors.textSecondary, marginTop: 16 }]}>
+              No activity yet
+            </Text>
+            <Text style={[Typography.bodySm, { color: Colors.textMuted, marginTop: 8, textAlign: 'center' }]}>
+              Activity will appear here once visits are completed.
+            </Text>
+          </View>
+        ) : (
+          activities.map((activity) => (
+            <Card
+              key={activity.id}
+              borderColor={activity.activity_type === 'visit_completed' ? Colors.success : Colors.border.default}
+              style={{ marginBottom: 12 }}
+            >
+              <View style={styles.activityRow}>
+                <Text style={{ fontSize: 20 }}>
+                  {ACTIVITY_ICONS[activity.activity_type] || '📌'}
                 </Text>
-                <Text style={[Typography.caption, { color: Colors.textMuted, marginTop: 2 }]}>
-                  {activity.time}
-                </Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[Typography.body, { color: Colors.textPrimary }]}>
+                    {activity.summary}
+                  </Text>
+                  <Text style={[Typography.caption, { color: Colors.textMuted, marginTop: 2 }]}>
+                    {formatTime(activity.created_at)}
+                  </Text>
+                </View>
               </View>
-            </View>
-          </Card>
-        ))}
+            </Card>
+          ))
+        )}
 
         {/* Send Appreciation CTA */}
         <Card borderColor={Colors.accent.orange} style={{ marginTop: 16 }}>
@@ -83,7 +147,7 @@ export default function FamilyScreen() {
             🙏 Send Appreciation
           </Text>
           <Text style={[Typography.bodySm, { color: Colors.textSecondary, marginTop: 8 }]}>
-            Show Maria you see her work. One appreciation covers half the subscription.
+            Show your caregiver you see their work. One appreciation covers half the subscription.
           </Text>
           <Button
             title="Send Appreciation"
@@ -104,16 +168,13 @@ export default function FamilyScreen() {
                     Appreciation Sent!
                   </Text>
                   <Text style={[Typography.body, { color: Colors.textSecondary, marginTop: 8, textAlign: 'center' }]}>
-                    Maria will be notified. Thank you for seeing her work.
+                    Your caregiver will be notified. Thank you for seeing their work.
                   </Text>
                 </View>
               ) : (
                 <>
                   <Text style={[Typography.h2, { color: Colors.textPrimary }]}>
                     Send Appreciation
-                  </Text>
-                  <Text style={[Typography.bodySm, { color: Colors.textSecondary, marginTop: 8 }]}>
-                    Maria completed a 4-hour visit with Mom
                   </Text>
 
                   <View style={styles.amountRow}>
@@ -174,6 +235,11 @@ const styles = StyleSheet.create({
   scroll: {
     padding: Layout.spacing.xl,
     paddingTop: 16,
+  },
+  empty: {
+    alignItems: 'center',
+    marginTop: 60,
+    paddingHorizontal: 32,
   },
   activityRow: {
     flexDirection: 'row',

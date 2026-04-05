@@ -3,7 +3,7 @@
  * Provider ID + Recipient ID setup for EVV
  */
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ScrollView, Alert } from 'react-native';
 import { router } from 'expo-router';
 import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
@@ -11,15 +11,70 @@ import Layout from '@/constants/Layout';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import { useAppStore } from '@/store/useAppStore';
+import { supabase } from '@/services/supabase';
+import { getAggregatorForState } from '@/services/evv';
 
 export default function OnboardingScreen() {
   const [providerID, setProviderID] = useState('');
   const [recipientID, setRecipientID] = useState('');
-  const [recipientName, setRecipientName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [relationship, setRelationship] = useState('');
   const [state, setState] = useState('');
-  const setOnboarded = useAppStore((s) => s.setOnboarded);
+  const [loading, setLoading] = useState(false);
+  const { user, setOnboarded } = useAppStore();
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
+    if (!firstName || !state) {
+      Alert.alert('Missing Fields', 'Please enter at least the recipient name and state.');
+      return;
+    }
+
+    const aggregatorConfig = getAggregatorForState(state);
+    if (!aggregatorConfig) {
+      Alert.alert(
+        'State Not Supported',
+        `EVV auto-submit is not yet available in ${state.toUpperCase()}. You can still use CareLog for visit tracking.`
+      );
+    }
+
+    setLoading(true);
+
+    // Determine aggregator key from state
+    let aggregator: 'hhax' | 'sandata' | 'tellus' | 'providerone' | 'calevv' = 'hhax';
+    if (aggregatorConfig) {
+      const name = aggregatorConfig.name.toLowerCase();
+      if (name.includes('sandata')) aggregator = 'sandata';
+      else if (name.includes('tellus')) aggregator = 'tellus';
+      else if (name.includes('providerone') || name.includes('calevv')) aggregator = 'providerone';
+      else if (name.includes('calevv') || name.includes('cdss')) aggregator = 'calevv';
+    }
+
+    const { error } = await supabase.from('recipients').insert({
+      caregiver_id: user?.id,
+      first_name: firstName,
+      last_name: lastName || '',
+      relationship: relationship || 'family',
+      provider_id: providerID || '',
+      recipient_id: recipientID || '',
+      state: state.toUpperCase().slice(0, 2),
+      aggregator,
+    });
+
+    setLoading(false);
+
+    if (error) {
+      Alert.alert('Error', error.message);
+      return;
+    }
+
+    // Mark profile as onboarded
+    await supabase.from('profiles').update({ is_onboarded: true }).eq('id', user?.id);
+    setOnboarded(true);
+    router.replace('/(tabs)');
+  };
+
+  const handleSkip = () => {
     setOnboarded(true);
     router.replace('/(tabs)');
   };
@@ -36,12 +91,34 @@ export default function OnboardingScreen() {
 
       <Card borderColor={Colors.primary}>
         <View style={styles.field}>
-          <Text style={styles.label}>Recipient Name</Text>
+          <Text style={styles.label}>First Name</Text>
           <TextInput
             style={styles.input}
-            value={recipientName}
-            onChangeText={setRecipientName}
-            placeholder="e.g. Mom (Dorothy)"
+            value={firstName}
+            onChangeText={setFirstName}
+            placeholder="e.g. Dorothy"
+            placeholderTextColor={Colors.textMuted}
+          />
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Last Name</Text>
+          <TextInput
+            style={styles.input}
+            value={lastName}
+            onChangeText={setLastName}
+            placeholder="e.g. Smith"
+            placeholderTextColor={Colors.textMuted}
+          />
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Relationship</Text>
+          <TextInput
+            style={styles.input}
+            value={relationship}
+            onChangeText={setRelationship}
+            placeholder="e.g. Mother, Father, Spouse"
             placeholderTextColor={Colors.textMuted}
           />
         </View>
@@ -77,6 +154,7 @@ export default function OnboardingScreen() {
             placeholder="e.g. CO, FL, OH"
             placeholderTextColor={Colors.textMuted}
             autoCapitalize="characters"
+            maxLength={2}
           />
         </View>
       </Card>
@@ -84,13 +162,14 @@ export default function OnboardingScreen() {
       <Button
         title="Validate & Continue"
         onPress={handleComplete}
+        loading={loading}
         size="lg"
         style={{ marginTop: 24 }}
       />
 
       <Button
         title="Skip for Now"
-        onPress={handleComplete}
+        onPress={handleSkip}
         variant="ghost"
         style={{ marginTop: 12 }}
       />

@@ -27,7 +27,10 @@
         "backgroundColor": "#0B1622"
       },
       "package": "com.carelog.app",
-      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -43,7 +46,8 @@
         {
           "locationAlwaysAndWhenInUsePermission": "CareLog uses your location for EVV compliance verification."
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true
