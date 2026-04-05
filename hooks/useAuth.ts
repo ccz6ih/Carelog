@@ -39,13 +39,13 @@ export function useAuth() {
       }
     });
 
-    // Safety timeout — never spin forever
+    // Safety timeout — reduced to 500ms for faster web load
     const timeout = setTimeout(() => {
       if (!resolved.current) {
         resolved.current = true;
         setReady(true);
       }
-    }, 1500);
+    }, 500);
 
     return () => { cancelled = true; clearTimeout(timeout); };
   }, []);

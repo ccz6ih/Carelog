@@ -72,7 +72,7 @@ export default function Button({
         <LinearGradient
           colors={disabled
             ? [Colors.textMuted, Colors.textMuted]
-            : Colors.gradient.primary as unknown as string[]
+            : Colors.gradient.primary
           }
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}

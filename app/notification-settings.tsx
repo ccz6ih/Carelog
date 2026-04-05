@@ -53,9 +53,18 @@ const PREF_GROUPS: { title: string; items: PrefItem[] }[] = [
     ],
   },
   {
+    title: 'ACHIEVEMENTS & MILESTONES',
+    items: [
+      { key: 'milestone_reached', label: 'Visit Milestones', description: 'Celebrate 10, 25, 50, 100+ visits completed' },
+      { key: 'streak_achievement', label: 'Streak Achievements', description: 'Recognize consecutive days worked (3, 7, 14, 30+)' },
+      { key: 'perfect_week', label: 'Perfect Week', description: 'All EVV submitted on time with zero errors' },
+    ],
+  },
+  {
     title: 'SUMMARY',
     items: [
       { key: 'weekly_summary', label: 'Weekly Summary', description: 'Visits, hours, and compliance stats every Sunday' },
+      { key: 'weekly_praise', label: 'Weekly Praise', description: 'Sunday encouragement: "You are seen and valued"' },
     ],
   },
 ];
@@ -67,6 +76,8 @@ export default function NotificationSettingsScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!ready) return; // Wait for auth to initialize
+    
     async function load() {
       try {
         const { data } = await api.notifications.getPreferences(userId!);
@@ -81,6 +92,10 @@ export default function NotificationSettingsScreen() {
             evv_submitted: data.evv_submitted,
             evv_error: data.evv_error,
             weekly_summary: data.weekly_summary,
+            milestone_reached: data.milestone_reached ?? true,
+            streak_achievement: data.streak_achievement ?? true,
+            weekly_praise: data.weekly_praise ?? true,
+            perfect_week: data.perfect_week ?? true,
           });
         }
       } catch (e) {
@@ -88,8 +103,12 @@ export default function NotificationSettingsScreen() {
       }
       setLoading(false);
     }
-    if (ready && userId) load();
-    else if (ready && !userId) setLoading(false);
+    
+    if (userId) {
+      load();
+    } else {
+      setLoading(false);
+    }
   }, [ready, userId]);
 
   const togglePref = async (key: string) => {

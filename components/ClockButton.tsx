@@ -23,6 +23,8 @@ interface ClockButtonProps {
   elapsedTime: string;
   recipientName: string;
   onPress: () => void;
+  disabled?: boolean;
+  loading?: boolean;
 }
 
 export default function ClockButton({
@@ -30,6 +32,8 @@ export default function ClockButton({
   elapsedTime,
   recipientName,
   onPress,
+  disabled = false,
+  loading = false,
 }: ClockButtonProps) {
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
@@ -99,6 +103,7 @@ export default function ClockButton({
   }, [isClockedIn]);
 
   const handlePress = () => {
+    if (disabled || loading) return;
     if (Platform.OS !== 'web') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     }
@@ -151,13 +156,15 @@ export default function ClockButton({
       <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
         <TouchableOpacity
           onPress={handlePress}
-          activeOpacity={0.85}
+          activeOpacity={disabled || loading ? 1 : 0.85}
+          disabled={disabled || loading}
           style={[
             styles.button,
             {
               width: SIZE,
               height: SIZE,
               borderRadius: SIZE / 2,
+              opacity: disabled || loading ? 0.5 : 1,
             },
             isClockedIn && Layout.shadow.glow(Colors.primary),
           ]}

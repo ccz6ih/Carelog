@@ -111,11 +111,20 @@ export default function FamilyDashboard() {
         // Load recent visits
         const { data: visitData } = await supabase
           .from('visits')
-          .select('id, clock_in_time, clock_out_time, evv_status')
+          .select('id, clock_in_time, clock_out_time, evv_status, profiles!caregiver_id(first_name, last_name)')
           .eq('recipient_id', rec.id)
           .order('created_at', { ascending: false })
           .limit(10);
-        if (visitData) setRecentVisits(visitData);
+        if (visitData) {
+          // Transform to include caregiver_name (handle array response from Supabase)
+          setRecentVisits(visitData.map(v => {
+            const profile = Array.isArray(v.profiles) && v.profiles.length > 0 ? v.profiles[0] : null;
+            return {
+              ...v,
+              caregiver_name: profile ? `${profile.first_name} ${profile.last_name}` : 'Unknown'
+            };
+          }) as VisitSummary[]);
+        }
 
         // Subscribe to realtime
         supabase

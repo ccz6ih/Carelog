@@ -5,7 +5,7 @@
 import React, { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import Colors from '@/constants/Colors';
 import { supabase } from '@/services/supabase';
@@ -14,6 +14,33 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import { registerForPushNotifications } from '@/services/notifications';
 
 SplashScreen.preventAutoHideAsync();
+
+// Suppress browser extension errors and React Native Web warnings
+if (Platform.OS === 'web' && typeof window !== 'undefined') {
+  const originalError = console.error;
+  const originalWarn = console.warn;
+  
+  console.error = (...args) => {
+    const message = args.join(' ');
+    // Ignore browser extension message channel errors
+    if (message.includes('message channel closed') || 
+        message.includes('runtime.lastError') ||
+        message.includes('aria-hidden')) {
+      return;
+    }
+    originalError.apply(console, args);
+  };
+  
+  console.warn = (...args) => {
+    const message = args.join(' ');
+    // Ignore aria-hidden accessibility warnings (React Native Web Modal issue)
+    if (message.includes('aria-hidden') || 
+        message.includes('assistive technology')) {
+      return;
+    }
+    originalWarn.apply(console, args);
+  };
+}
 
 export default function RootLayout() {
   const { setUser, setOnboarded, logout } = useAppStore();

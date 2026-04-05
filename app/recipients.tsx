@@ -46,6 +46,7 @@ export default function RecipientsScreen() {
   const user = useAppStore((s) => s.user);
   const [recipients, setRecipients] = useState<RecipientRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadedOnce, setLoadedOnce] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -58,8 +59,14 @@ export default function RecipientsScreen() {
   const [state, setState] = useState('');
 
   useEffect(() => {
-    if (ready && userId) loadRecipients();
-    else if (ready && !userId) setLoading(false);
+    if (!ready) return; // Wait for auth to initialize
+    
+    if (userId && !loadedOnce) {
+      loadRecipients();
+      setLoadedOnce(true);
+    } else {
+      setLoading(false);
+    }
   }, [ready, userId]);
 
   async function loadRecipients() {
@@ -69,8 +76,8 @@ export default function RecipientsScreen() {
         .select('*')
         .eq('caregiver_id', userId!)
         .order('created_at', { ascending: true });
-      console.log('[Recipients] Loaded:', data?.length, 'Error:', error?.message);
       if (data) setRecipients(data);
+      if (error) console.error('[Recipients] Error:', error.message);
     } catch (e) {
       console.error('[Recipients]', e);
     }
@@ -144,11 +151,6 @@ export default function RecipientsScreen() {
           </Text>
           <Text style={[Typography.bodySm, { color: Colors.textSecondary, marginTop: 4, marginBottom: 24 }]}>
             Each recipient is linked to your Medicaid provider ID for EVV auto-submit.
-          </Text>
-
-          {/* Debug info — remove after fixing */}
-          <Text style={[Typography.micro, { color: Colors.textMuted, marginBottom: 8 }]}>
-            Auth: {ready ? 'ready' : 'waiting'} | User: {userId ? userId.slice(0, 8) + '...' : 'none'} | Items: {recipients.length}
           </Text>
 
           {loading ? (

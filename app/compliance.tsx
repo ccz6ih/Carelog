@@ -89,8 +89,14 @@ export default function ComplianceScreen() {
       }
       setLoading(false);
     }
-    if (ready && userId) load();
-    else if (ready && !userId) setLoading(false);
+    
+    if (!ready) return; // Wait for auth to initialize
+    
+    if (userId) {
+      load();
+    } else {
+      setLoading(false);
+    }
   }, [ready, userId]);
 
   const formatDate = (dateStr: string) => {

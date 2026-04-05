@@ -127,7 +127,7 @@ export default function LoginScreen() {
             {/* Brand */}
             <View style={styles.brand}>
               <LinearGradient
-                colors={Colors.gradient.primary as unknown as string[]}
+                colors={Colors.gradient.primary}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.logoMark}

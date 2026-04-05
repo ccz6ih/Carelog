@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Welcome to CareLog</title>
+</head>
+<body style="margin:0;padding:0;background-color:#070E17;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+
+<!-- Outer wrapper -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#070E17;">
+<tr><td align="center" style="padding:40px 16px;">
+
+<!-- Main card -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#0B1622;border-radius:16px;overflow:hidden;border:1px solid rgba(0,212,170,0.12);">
+
+<!-- Header with logo -->
+<tr><td style="padding:40px 40px 24px 40px;text-align:center;">
+  <!-- Logo mark -->
+  <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto;">
+  <tr><td style="width:56px;height:56px;background-color:#00D4AA;border-radius:14px;text-align:center;vertical-align:middle;">
+    <span style="color:#0B1622;font-size:22px;font-weight:800;letter-spacing:-0.5px;">CL</span>
+  </td></tr>
+  </table>
+  <h1 style="margin:16px 0 0;font-size:26px;font-weight:700;color:#FFFFFF;letter-spacing:-0.5px;">CareLog</h1>
+  <p style="margin:6px 0 0;font-size:14px;color:#8BA3BE;letter-spacing:0.3px;">Get Paid. Stay Compliant. Feel Seen.</p>
+</td></tr>
+
+<!-- Divider -->
+<tr><td style="padding:0 40px;">
+  <div style="height:1px;background:linear-gradient(90deg,transparent,#00D4AA33,transparent);"></div>
+</td></tr>
+
+<!-- Welcome message -->
+<tr><td style="padding:32px 40px 16px;">
+  <h2 style="margin:0 0 8px;font-size:22px;font-weight:600;color:#FFFFFF;">Welcome to CareLog, {{ .Data.first_name }}.</h2>
+  <p style="margin:0;font-size:15px;line-height:24px;color:#8BA3BE;">
+    You're one step away from never worrying about EVV compliance again. Confirm your email to activate your account and start getting paid on time, every time.
+  </p>
+</td></tr>
+
+<!-- CTA Button -->
+<tr><td style="padding:8px 40px 32px;" align="center">
+  <table role="presentation" cellpadding="0" cellspacing="0">
+  <tr><td style="background-color:#00D4AA;border-radius:12px;text-align:center;">
+    <a href="{{ .ConfirmationURL }}" target="_blank" style="display:inline-block;padding:16px 48px;font-size:16px;font-weight:600;color:#0B1622;text-decoration:none;letter-spacing:0.3px;">
+      Confirm My Account
+    </a>
+  </td></tr>
+  </table>
+</td></tr>
+<!-- Value props -->
+<tr><td style="padding:0 40px;">
+  <div style="height:1px;background:rgba(139,163,190,0.12);"></div>
+</td></tr>
+
+<tr><td style="padding:28px 40px 8px;">
+  <p style="margin:0 0 4px;font-size:11px;font-weight:700;color:#00D4AA;letter-spacing:3px;text-transform:uppercase;">WHAT HAPPENS NEXT</p>
+</td></tr>
+
+<!-- Step 1 -->
+<tr><td style="padding:8px 40px;">
+  <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+  <tr>
+    <td style="width:40px;vertical-align:top;">
+      <div style="width:32px;height:32px;background-color:rgba(0,212,170,0.12);border-radius:8px;text-align:center;line-height:32px;font-size:14px;">1</div>
+    </td>
+    <td style="padding-left:12px;vertical-align:top;">
+      <p style="margin:0;font-size:14px;font-weight:600;color:#FFFFFF;">Add your care recipient</p>
+      <p style="margin:4px 0 0;font-size:13px;color:#5A7A9A;">Provider ID + Recipient ID — we validate against your state's Medicaid API.</p>
+    </td>
+  </tr>
+  </table>
+</td></tr>
+<!-- Step 2 -->
+<tr><td style="padding:8px 40px;">
+  <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+  <tr>
+    <td style="width:40px;vertical-align:top;">
+      <div style="width:32px;height:32px;background-color:rgba(0,212,170,0.12);border-radius:8px;text-align:center;line-height:32px;font-size:14px;">2</div>
+    </td>
+    <td style="padding-left:12px;vertical-align:top;">
+      <p style="margin:0;font-size:14px;font-weight:600;color:#FFFFFF;">Clock in for your first visit</p>
+      <p style="margin:4px 0 0;font-size:13px;color:#5A7A9A;">One tap. GPS captured. Timer starts. 5 seconds.</p>
+    </td>
+  </tr>
+  </table>
+</td></tr>
+
+<!-- Step 3 -->
+<tr><td style="padding:8px 40px 28px;">
+  <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+  <tr>
+    <td style="width:40px;vertical-align:top;">
+      <div style="width:32px;height:32px;background-color:rgba(0,212,170,0.12);border-radius:8px;text-align:center;line-height:32px;font-size:14px;">3</div>
+    </td>
+    <td style="padding-left:12px;vertical-align:top;">
+      <p style="margin:0;font-size:14px;font-weight:600;color:#FFFFFF;">Clock out — auto-submitted</p>
+      <p style="margin:4px 0 0;font-size:13px;color:#5A7A9A;">All 6 EVV data points sent to Medicaid. Green checkmark. You get paid.</p>
+    </td>
+  </tr>
+  </table>
+</td></tr>
+<!-- Stats bar -->
+<tr><td style="padding:0 40px;">
+  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color:#142842;border-radius:12px;border:1px solid rgba(0,212,170,0.08);">
+  <tr>
+    <td style="padding:16px;text-align:center;width:33%;border-right:1px solid rgba(139,163,190,0.1);">
+      <p style="margin:0;font-size:20px;font-weight:700;color:#00D4AA;">$1,500+</p>
+      <p style="margin:4px 0 0;font-size:11px;color:#5A7A9A;">Saved per year</p>
+    </td>
+    <td style="padding:16px;text-align:center;width:34%;border-right:1px solid rgba(139,163,190,0.1);">
+      <p style="margin:0;font-size:20px;font-weight:700;color:#FF9F1C;">4 hrs</p>
+      <p style="margin:4px 0 0;font-size:11px;color:#5A7A9A;">Admin time saved/mo</p>
+    </td>
+    <td style="padding:16px;text-align:center;width:33%;">
+      <p style="margin:0;font-size:20px;font-weight:700;color:#4CAF50;">5-12x</p>
+      <p style="margin:4px 0 0;font-size:11px;color:#5A7A9A;">ROI vs subscription</p>
+    </td>
+  </tr>
+  </table>
+</td></tr>
+
+<!-- Trust + security -->
+<tr><td style="padding:24px 40px 8px;text-align:center;">
+  <p style="margin:0;font-size:12px;color:#5A7A9A;">
+    HIPAA Compliant &middot; AES-256 Encrypted &middot; Your data never leaves your control
+  </p>
+</td></tr>
+
+<!-- Fallback link -->
+<tr><td style="padding:8px 40px 32px;text-align:center;">
+  <p style="margin:0;font-size:12px;color:#5A7A9A;line-height:20px;">
+    If the button doesn't work, copy and paste this link:<br>
+    <a href="{{ .ConfirmationURL }}" style="color:#00D4AA;word-break:break-all;font-size:11px;">{{ .ConfirmationURL }}</a>
+  </p>
+</td></tr>
+
+</table>
+<!-- End main card -->
+
+<!-- Footer -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin-top:24px;">
+<tr><td style="text-align:center;padding:0 40px;">
+  <p style="margin:0;font-size:11px;color:#5A7A9A;line-height:18px;">
+    CareLog &middot; The EVV Compliance Platform for Paid Family Caregivers<br>
+    Build smart. Print on automatic.
+  </p>
+  <p style="margin:12px 0 0;font-size:11px;color:#3A4A5A;">
+    You received this email because you signed up at {{ .SiteURL }}.<br>
+    If you didn't create this account, you can safely ignore this email.
+  </p>
+</td></tr>
+</table>
+
+</td></tr>
+</table>
+<!-- End outer wrapper -->
+
+</body>
+</html>

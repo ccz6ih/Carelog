@@ -53,8 +53,13 @@ export default function FamilyMembersScreen() {
   const [recipientOptions, setRecipientOptions] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
-    if (ready && userId) loadData();
-    else if (ready && !userId) setLoading(false);
+    if (!ready) return; // Wait for auth to initialize
+    
+    if (userId) {
+      loadData();
+    } else {
+      setLoading(false);
+    }
   }, [ready, userId]);
 
   async function loadData() {
@@ -72,7 +77,13 @@ export default function FamilyMembersScreen() {
         .from('family_members')
         .select('id, name, email, relationship, invite_accepted, recipients(first_name)')
         .eq('invited_by', userId!);
-      if (fam) setMembers(fam as FamilyRow[]);
+      if (fam) {
+        // Transform recipients from array to single object (one-to-one relationship)
+        setMembers(fam.map(f => ({
+          ...f,
+          recipients: Array.isArray(f.recipients) && f.recipients.length > 0 ? f.recipients[0] : null
+        })) as FamilyRow[]);
+      }
     } catch (e) {
       console.error('[FamilyMembers]', e);
     }

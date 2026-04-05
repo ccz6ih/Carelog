@@ -94,8 +94,14 @@ export default function EarningsScreen() {
       }
       setLoading(false);
     }
-    if (ready && userId) load();
-    else if (ready && !userId) setLoading(false);
+    
+    if (!ready) return; // Wait for auth to initialize
+    
+    if (userId) {
+      load();
+    } else {
+      setLoading(false);
+    }
   }, [ready, userId]);
 
   const formatDuration = (clockIn: string, clockOut: string) => {

@@ -26,6 +26,7 @@ import { submitEVV } from '@/services/evv';
 import { enqueueEVV, processQueue } from '@/services/evvQueue';
 import { logVisitStarted, logVisitCompleted } from '@/services/familyActivity';
 import { notifyFamilyMembers } from '@/services/notifications';
+import { checkMilestones } from '@/services/caregiverAppreciation';
 import TaskLogger from '@/components/TaskLogger';
 import VisitNotes from '@/components/VisitNotes';
 import PhotoCapture from '@/components/PhotoCapture';
@@ -54,6 +55,7 @@ export default function DashboardScreen() {
   const { userId, ready } = useAuth();
   const { getLocation } = useLocation();
   const [recipient, setRecipient] = useState<CareRecipient | null>(null);
+  const [recipientLoading, setRecipientLoading] = useState(true);
   const [stats, setStats] = useState<StatItem[]>([
     { label: 'Visits', value: '—', color: Colors.primary },
     { label: 'Hours', value: '—', color: Colors.accent.orange },
@@ -75,6 +77,7 @@ export default function DashboardScreen() {
   // Load recipients and select first one
   useEffect(() => {
     async function loadRecipient() {
+      setRecipientLoading(true);
       try {
         const { data } = await supabase
           .from('recipients')
@@ -96,12 +99,21 @@ export default function DashboardScreen() {
             state: r.state,
             aggregator: r.aggregator,
           });
+        } else {
+          setRecipient(null);
         }
       } catch (e) {
         console.error('[Dashboard] loadRecipient', e);
+        setRecipient(null);
+      } finally {
+        setRecipientLoading(false);
       }
     }
-    if (ready && userId) loadRecipient();
+    if (ready && userId) {
+      loadRecipient();
+    } else if (!ready) {
+      setRecipientLoading(true);
+    }
   }, [ready, userId]);
 
   // Load monthly stats
@@ -208,6 +220,11 @@ export default function DashboardScreen() {
             user?.firstName || 'Caregiver',
             { duration: durationStr }
           );
+
+          // Check for milestones and celebrate caregiver achievements
+          if (userId) {
+            await checkMilestones(userId);
+          }
 
           setTimeout(() => endVisit(), 2500);
         } else {
@@ -321,6 +338,8 @@ export default function DashboardScreen() {
             elapsedTime={formatTime(elapsedSeconds)}
             recipientName={recipientName}
             onPress={handleClockToggle}
+            disabled={recipientLoading}
+            loading={recipientLoading}
           />
 
           {/* EVV Status Banners */}

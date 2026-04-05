@@ -104,7 +104,11 @@ export default function SettingsScreen() {
 
           {/* Profile Card */}
           <Card style={{ marginBottom: 24 }}>
-            <View style={styles.profileHeader}>
+            <TouchableOpacity
+              style={styles.profileHeader}
+              onPress={() => router.push('/profile-edit')}
+              activeOpacity={0.7}
+            >
               <View style={styles.avatar}>
                 <Text style={[Typography.h3, { color: Colors.primary }]}>
                   {user?.firstName?.[0]}{user?.lastName?.[0]}
@@ -117,6 +121,9 @@ export default function SettingsScreen() {
                 <Text style={[Typography.caption, { color: Colors.textMuted, marginTop: 2 }]}>
                   {user?.email}
                 </Text>
+                <Text style={[Typography.micro, { color: Colors.primary, marginTop: 6, letterSpacing: 0.5 }]}>
+                  TAP TO EDIT PROFILE →
+                </Text>
               </View>
               <Badge
                 label={user?.tier?.toUpperCase() || 'BASIC'}
@@ -124,7 +131,7 @@ export default function SettingsScreen() {
                 variant="dot"
                 size="sm"
               />
-            </View>
+            </TouchableOpacity>
           </Card>
 
           {/* Groups */}

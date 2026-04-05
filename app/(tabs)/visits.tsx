@@ -29,6 +29,8 @@ export default function VisitsScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!ready) return; // Wait for auth to initialize
+    
     async function loadVisits() {
       try {
         const { data } = await supabase
@@ -37,14 +39,24 @@ export default function VisitsScreen() {
           .eq('caregiver_id', userId!)
           .order('created_at', { ascending: false })
           .limit(50);
-        if (data) setVisits(data as VisitRow[]);
+        if (data) {
+          // Transform recipients from array to single object (one-to-one relationship)
+          setVisits(data.map(v => ({
+            ...v,
+            recipients: Array.isArray(v.recipients) && v.recipients.length > 0 ? v.recipients[0] : null
+          })) as VisitRow[]);
+        }
       } catch (e) {
         console.error('[Visits]', e);
       }
       setLoading(false);
     }
-    if (ready && userId) loadVisits();
-    else if (ready && !userId) setLoading(false);
+    
+    if (userId) {
+      loadVisits();
+    } else {
+      setLoading(false);
+    }
   }, [ready, userId]);
 
   const formatVisitDate = (clockIn: string, clockOut: string | null) => {

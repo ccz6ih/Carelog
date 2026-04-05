@@ -42,6 +42,8 @@ export default function EVVConfigScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!ready) return; // Wait for auth to initialize
+    
     async function load() {
       try {
         const { data } = await supabase
@@ -55,8 +57,12 @@ export default function EVVConfigScreen() {
       }
       setLoading(false);
     }
-    if (ready && userId) load();
-    else if (ready && !userId) setLoading(false);
+    
+    if (userId) {
+      load();
+    } else {
+      setLoading(false);
+    }
   }, [ready, userId]);
 
   const aggregatorNames: Record<string, string> = {

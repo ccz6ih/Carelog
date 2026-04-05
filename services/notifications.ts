@@ -12,7 +12,11 @@ export type NotificationType =
   | 'medication_alert'
   | 'appreciation_received'
   | 'evv_submitted'
-  | 'evv_error';
+  | 'evv_error'
+  | 'milestone_reached'       // NEW: Visit milestones (10, 25, 50, 100 visits)
+  | 'streak_achievement'      // NEW: Consecutive days worked (3, 7, 14, 30 days)
+  | 'weekly_praise'           // NEW: Sunday encouragement with stats
+  | 'perfect_week';           // NEW: All EVV submitted, no errors all week
 
 interface NotificationContent {
   title: string;
@@ -52,6 +56,22 @@ const NOTIFICATION_TEMPLATES: Record<NotificationType, (name: string) => Notific
   evv_error: () => ({
     title: 'EVV Needs Attention',
     body: 'Visit queued for retry. Tap to review.',
+  }),
+  milestone_reached: (count) => ({
+    title: '🎉 Milestone Reached!',
+    body: `${count} visits completed. You're making a real difference.`,
+  }),
+  streak_achievement: (days) => ({
+    title: '🔥 Streak Achievement!',
+    body: `${days} days in a row. Your reliability means everything.`,
+  }),
+  weekly_praise: (hours) => ({
+    title: '💙 This Week',
+    body: `${hours} hours of care. That's dedication. You are seen.`,
+  }),
+  perfect_week: () => ({
+    title: '✨ Perfect Week!',
+    body: 'All EVV submitted on time. Zero errors. You are thorough and reliable.',
   }),
 };
 
