@@ -131,19 +131,19 @@ export default function SettingsScreen() {
               icon={<IconCaregiver size={19} color={Colors.primary} strokeWidth={2} />}
               label="Care Recipients"
               value={`${recipientCount} recipient${recipientCount !== 1 ? 's' : ''}`}
-              onPress={() => {}}
+              onPress={() => router.push('/recipients')}
             />
             <SettingsRow
               icon={<IconGroup size={19} color={Colors.accent.purple} strokeWidth={2} />}
-              label="Family Members"
+              label="Family Viewers"
               value={`${familyCount} viewer${familyCount !== 1 ? 's' : ''} connected`}
-              onPress={() => {}}
+              onPress={() => router.push('/family-members')}
             />
-            <SettingsRow icon={<IconHeart size={19} color={Colors.accent.orange} strokeWidth={2} />} label="Subscription" value="Basic · $19.99/mo" onPress={() => {}} isLast />
+            <SettingsRow icon={<IconHeart size={19} color={Colors.accent.orange} strokeWidth={2} />} label="Subscription" value="Basic · $19.99/mo" onPress={() => router.push('/subscription')} isLast />
           </Card>
 
           <Card padding="sm" style={{ marginBottom: 12 }}>
-            <SettingsRow icon={<IconNurture size={19} color={Colors.primary} strokeWidth={2} />} label="EVV Configuration" onPress={() => {}} />
+            <SettingsRow icon={<IconNurture size={19} color={Colors.primary} strokeWidth={2} />} label="EVV Configuration" onPress={() => router.push('/evv-config')} />
             <SettingsRow icon={<IconVisit size={19} color={Colors.accent.orange} strokeWidth={2} />} label="Compliance Reports" onPress={() => router.push('/compliance')} />
             <SettingsRow icon={<IconComfort size={19} color={Colors.success} strokeWidth={2} />} label="Earnings History" onPress={() => {}} isLast />
           </Card>
