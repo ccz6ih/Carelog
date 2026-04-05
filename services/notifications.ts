@@ -1,20 +1,8 @@
 /**
  * CareLog Notification Service
- * Powers the Family Portal push notifications
- * "Maria started her visit with Mom — 9:02am"
+ * Push notifications for native, no-op on web
  */
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-
-// Configure notification handler
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowInForeground: true,
-  }),
-});
 
 export type NotificationType =
   | 'visit_started'
@@ -34,93 +22,114 @@ interface NotificationContent {
 
 const NOTIFICATION_TEMPLATES: Record<NotificationType, (name: string) => NotificationContent> = {
   visit_started: (name) => ({
-    title: '🔔 Visit Started',
-    body: `${name} started their visit with Mom`,
+    title: 'Visit Started',
+    body: `${name} started their visit`,
   }),
   visit_completed: (name) => ({
-    title: '✅ Visit Completed',
-    body: `${name} completed a visit with Mom`,
+    title: 'Visit Completed',
+    body: `${name} completed a visit`,
   }),
   task_logged: (name) => ({
-    title: '📋 Tasks Updated',
+    title: 'Tasks Updated',
     body: `${name} logged care tasks during the visit`,
   }),
   photo_shared: (name) => ({
-    title: '📸 Photo Shared',
+    title: 'Photo Shared',
     body: `${name} shared a photo from the visit`,
   }),
   medication_alert: () => ({
-    title: '⚠️ Medication Alert',
+    title: 'Medication Alert',
     body: 'Scheduled medication was not logged during this visit',
   }),
   appreciation_received: (name) => ({
-    title: '💚 Appreciation Received!',
+    title: 'Appreciation Received!',
     body: `${name} sent you appreciation. You are seen.`,
   }),
   evv_submitted: () => ({
-    title: '✓ EVV Submitted',
+    title: 'EVV Submitted',
     body: 'All 6 data points submitted to state Medicaid',
   }),
   evv_error: () => ({
-    title: '✕ EVV Submission Failed',
+    title: 'EVV Needs Attention',
     body: 'Visit queued for retry. Tap to review.',
   }),
 };
 
 /**
- * Request push notification permissions
+ * Request push notification permissions (native only)
  */
 export async function registerForPushNotifications(): Promise<string | null> {
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
+  if (Platform.OS === 'web') return null;
 
-  if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
-  }
+  try {
+    const Notifications = require('expo-notifications');
 
-  if (finalStatus !== 'granted') {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+      }),
+    });
+
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    if (finalStatus !== 'granted') return null;
+
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'CareLog',
+        importance: Notifications.AndroidImportance.HIGH,
+        vibrationPattern: [0, 250, 250, 250],
+      });
+    }
+
+    const token = await Notifications.getExpoPushTokenAsync();
+    return token.data;
+  } catch {
     return null;
   }
-
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('default', {
-      name: 'CareLog',
-      importance: Notifications.AndroidImportance.HIGH,
-      vibrationPattern: [0, 250, 250, 250],
-    });
-  }
-
-  const token = await Notifications.getExpoPushTokenAsync();
-  return token.data;
 }
 
 /**
- * Send a local notification (for testing / offline scenarios)
+ * Send a local notification (native only — no-op on web)
  */
 export async function sendLocalNotification(
   type: NotificationType,
   caregiverName: string = 'Your caregiver'
 ) {
-  const template = NOTIFICATION_TEMPLATES[type];
-  if (!template) return;
+  if (Platform.OS === 'web') return;
 
-  const content = template(caregiverName);
+  try {
+    const Notifications = require('expo-notifications');
+    const template = NOTIFICATION_TEMPLATES[type];
+    if (!template) return;
 
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title: content.title,
-      body: content.body,
-      data: content.data || {},
-      sound: true,
-    },
-    trigger: null, // Immediate
-  });
+    const content = template(caregiverName);
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: content.title,
+        body: content.body,
+        data: content.data || {},
+        sound: true,
+      },
+      trigger: null,
+    });
+  } catch {
+    // Silently fail — notifications are not critical path
+  }
 }
 
 /**
  * Notify family members about a visit event
- * Sends local notifications to all linked family members with the app installed
+ * Native: local notification. Web: no-op.
+ * Production: would send Expo Push to family member devices.
  */
 export async function notifyFamilyMembers(
   recipientId: string,
@@ -128,24 +137,13 @@ export async function notifyFamilyMembers(
   caregiverName: string,
   metadata?: Record<string, unknown>
 ) {
-  // For now, just send a local notification
-  // In production, this would send Expo push notifications to family member devices
-  // via their push_tokens stored in profiles table
-  
-  await sendLocalNotification(type, caregiverName);
+  // On web, just log — no push notifications available
+  if (Platform.OS === 'web') {
+    console.log(`[Notifications] ${type}: ${caregiverName} (web — skipped)`);
+    return;
+  }
 
-  // TODO: In production, fetch family member push tokens and send via Expo Push API:
-  // const { data: familyMembers } = await supabase
-  //   .from('family_members')
-  //   .select('user_id, profiles(push_token)')
-  //   .eq('recipient_id', recipientId)
-  //   .eq('invite_accepted', true);
-  //
-  // for (const member of familyMembers) {
-  //   if (member.profiles?.push_token) {
-  //     await sendExpoPushNotification(member.profiles.push_token, type, caregiverName);
-  //   }
-  // }
+  await sendLocalNotification(type, caregiverName);
 }
 
 export default {
