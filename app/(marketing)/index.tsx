@@ -33,7 +33,7 @@ const HOW_IT_WORKS_STEPS = [
   {
     number: 3,
     title: 'Provide Care',
-    description: 'Log tasks, take photos, add notes—document the amazing work you do',
+    description: 'Log tasks, take photos, add notes—family gets real-time notifications',
   },
   {
     number: 4,
@@ -42,8 +42,8 @@ const HOW_IT_WORKS_STEPS = [
   },
   {
     number: 5,
-    title: 'Get Paid',
-    description: 'Compliant visits mean on-time payments—no more delays or denials',
+    title: 'Get Paid & Appreciated',
+    description: 'On-time Medicaid payments + family can send appreciation via Venmo/Zelle',
   },
 ];
 

@@ -40,8 +40,10 @@ const TIERS: Record<PricingTier, TierData> = {
     features: [
       { text: 'Clock in/out with GPS', included: true },
       { text: 'Auto-submit to state aggregator', included: true },
-      { text: 'Up to 2 care recipients', included: true },
+      { text: '1 care recipient', included: true },
+      { text: '1 family viewer (free Family Portal)', included: true },
       { text: 'Visit history & EVV status', included: true },
+      { text: 'Offline mode with retry queue', included: true },
       { text: 'Email support', included: true },
       { text: 'Task logging & care plans', included: false },
       { text: 'Photo uploads', included: false },
@@ -50,37 +52,40 @@ const TIERS: Record<PricingTier, TierData> = {
   },
   pro: {
     name: 'Pro',
-    price: '$39.99',
+    price: '$29.99',
     tagline: 'Advanced features + priority support',
     color: Colors.accent.purple,
     ctaText: 'Start Free Trial',
     popular: true,
     features: [
       { text: 'Everything in Basic', included: true },
-      { text: 'Up to 5 care recipients', included: true },
+      { text: '2 care recipients', included: true },
+      { text: '3 family viewers', included: true },
       { text: 'Task logging & care plans', included: true },
       { text: 'Photo uploads', included: true },
+      { text: 'Medication log', included: true },
       { text: 'Earnings analytics & export', included: true },
       { text: 'Compliance reports', included: true },
       { text: 'Priority email + chat support', included: true },
-      { text: 'Multi-caregiver accounts', included: false },
+      { text: 'Training videos', included: true },
     ],
   },
   family: {
     name: 'Family',
-    price: '$59.99',
-    tagline: 'For agencies or families with multiple caregivers',
+    price: '$44.99',
+    tagline: 'For families caring for multiple loved ones',
     color: Colors.accent.pink,
-    ctaText: 'Contact Sales',
+    ctaText: 'Start Free Trial',
     features: [
       { text: 'Everything in Pro', included: true },
       { text: 'Unlimited care recipients', included: true },
-      { text: 'Up to 5 caregiver accounts', included: true },
-      { text: 'Real-time family notifications', included: true },
-      { text: 'Multi-user dashboard', included: true },
-      { text: 'Phone support', included: true },
-      { text: 'Custom training & onboarding', included: true },
-      { text: 'Dedicated account manager', included: true },
+      { text: 'Unlimited family viewers', included: true },
+      { text: 'Premium training videos', included: true },
+      { text: 'Medication alerts & reminders', included: true },
+      { text: 'Community access (forums, weekly calls)', included: true },
+      { text: 'Priority phone support', included: true },
+      { text: 'Advanced compliance reporting', included: true },
+      { text: 'Export data for tax prep', included: true },
     ],
   },
 };
@@ -117,15 +122,8 @@ export default function PricingPage() {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
   const handleSelectTier = (tier: PricingTier) => {
-    if (tier === 'family') {
-      // Open contact form or Calendly
-      if (Platform.OS === 'web') {
-        window.open('mailto:sales@carelog.app?subject=Family%20Tier%20Inquiry', '_blank');
-      }
-    } else {
-      // For Basic/Pro: show signup modal (Stripe integration happens post-signup)
-      setShowLoginModal(true);
-    }
+    // All tiers go to signup with free trial
+    setShowLoginModal(true);
   };
 
   return (
