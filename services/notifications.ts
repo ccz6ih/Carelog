@@ -118,7 +118,38 @@ export async function sendLocalNotification(
   });
 }
 
+/**
+ * Notify family members about a visit event
+ * Sends local notifications to all linked family members with the app installed
+ */
+export async function notifyFamilyMembers(
+  recipientId: string,
+  type: NotificationType,
+  caregiverName: string,
+  metadata?: Record<string, unknown>
+) {
+  // For now, just send a local notification
+  // In production, this would send Expo push notifications to family member devices
+  // via their push_tokens stored in profiles table
+  
+  await sendLocalNotification(type, caregiverName);
+
+  // TODO: In production, fetch family member push tokens and send via Expo Push API:
+  // const { data: familyMembers } = await supabase
+  //   .from('family_members')
+  //   .select('user_id, profiles(push_token)')
+  //   .eq('recipient_id', recipientId)
+  //   .eq('invite_accepted', true);
+  //
+  // for (const member of familyMembers) {
+  //   if (member.profiles?.push_token) {
+  //     await sendExpoPushNotification(member.profiles.push_token, type, caregiverName);
+  //   }
+  // }
+}
+
 export default {
   registerForPushNotifications,
   sendLocalNotification,
+  notifyFamilyMembers,
 };

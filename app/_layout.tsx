@@ -11,6 +11,7 @@ import Colors from '@/constants/Colors';
 import { supabase } from '@/services/supabase';
 import { useAppStore } from '@/store/useAppStore';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import { registerForPushNotifications } from '@/services/notifications';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -48,6 +49,16 @@ export default function RootLayout() {
             recipients: [],
             activeVisit: null,
           });
+
+          // Register for push notifications
+          const pushToken = await registerForPushNotifications();
+          if (pushToken) {
+            // Save token to profile for backend push sending
+            await supabase
+              .from('profiles')
+              .update({ push_token: pushToken })
+              .eq('id', session.user.id);
+          }
 
           if (role === 'family') {
             // Link any pending family invites to this user
