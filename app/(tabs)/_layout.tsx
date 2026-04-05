@@ -97,8 +97,8 @@ const styles = StyleSheet.create({
     height: 28,
   },
   iconText: {
-    fontSize: 20,
-    fontWeight: '300',
+    fontSize: 18,
+    fontWeight: '600',
   },
   activeIndicator: {
     width: 4,

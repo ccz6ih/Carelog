@@ -2,23 +2,10 @@
  * CareLog Layout Constants
  * Responsive spacing, radii, sizing, breakpoints
  */
-import { Dimensions, Platform } from 'react-native';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-// Responsive breakpoints
-const isSmall = SCREEN_WIDTH < 375;
-const isMedium = SCREEN_WIDTH >= 375 && SCREEN_WIDTH < 768;
-const isTablet = SCREEN_WIDTH >= 768 && SCREEN_WIDTH < 1024;
-const isDesktop = SCREEN_WIDTH >= 1024;
+import { Platform } from 'react-native';
 
 export const Layout = {
   screen: {
-    width: SCREEN_WIDTH,
-    isSmall,
-    isMedium,
-    isTablet,
-    isDesktop,
     isWeb: Platform.OS === 'web',
   },
 
@@ -26,7 +13,6 @@ export const Layout = {
   content: {
     maxWidth: 480,
     maxWidthWide: 960,
-    paddingHorizontal: isDesktop ? 0 : isTablet ? 40 : 24,
   },
 
   spacing: {
@@ -51,7 +37,7 @@ export const Layout = {
 
   // Clock button (the hero interaction)
   clockButton: {
-    size: isSmall ? 170 : 220,
+    size: 220,
     borderWidth: 3,
     glowSize: 280,
   },
