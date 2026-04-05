@@ -1,31 +1,28 @@
 /**
  * CareLog Tab Navigation
- * Frosted glass tab bar, teal active state, refined icons
+ * Hand-drawn care icons, frosted glass bar
  */
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
-import Layout from '@/constants/Layout';
+import { IconComfort, IconVisit, IconHeart, IconNurture } from '@/components/icons/CareIcons';
 
 function TabIcon({ name, focused }: { name: string; focused: boolean }) {
-  const icons: Record<string, { active: string; inactive: string }> = {
-    Dashboard: { active: '◉', inactive: '○' },
-    Visits: { active: '▣', inactive: '▢' },
-    Family: { active: '♥', inactive: '♡' },
-    Settings: { active: '⬢', inactive: '⬡' },
+  const color = focused ? Colors.tabBar.active : Colors.tabBar.inactive;
+  const size = 22;
+
+  const icons: Record<string, React.ReactNode> = {
+    Dashboard: <IconComfort size={size} color={color} strokeWidth={2} />,
+    Visits: <IconVisit size={size} color={color} strokeWidth={2} />,
+    Family: <IconHeart size={size} color={color} strokeWidth={2} />,
+    Settings: <IconNurture size={size} color={color} strokeWidth={2} />,
   };
-  const icon = icons[name] || { active: '●', inactive: '○' };
 
   return (
     <View style={styles.tabIcon}>
-      <Text style={[
-        styles.iconText,
-        { color: focused ? Colors.tabBar.active : Colors.tabBar.inactive },
-      ]}>
-        {focused ? icon.active : icon.inactive}
-      </Text>
+      {icons[name]}
       {focused && <View style={styles.activeIndicator} />}
     </View>
   );
@@ -95,10 +92,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     height: 28,
-  },
-  iconText: {
-    fontSize: 18,
-    fontWeight: '600',
   },
   activeIndicator: {
     width: 4,

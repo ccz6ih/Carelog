@@ -19,11 +19,12 @@ import Layout from '@/constants/Layout';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
+import { IconCaregiver, IconGroup, IconHeart, IconVisit, IconNurture, IconComfort } from '@/components/icons/CareIcons';
 import { useAppStore } from '@/store/useAppStore';
 import { supabase } from '@/services/supabase';
 
 interface SettingsRowProps {
-  icon: string;
+  icon: React.ReactNode;
   label: string;
   value?: string;
   onPress?: () => void;
@@ -38,7 +39,7 @@ function SettingsRow({ icon, label, value, onPress, isLast }: SettingsRowProps) 
       activeOpacity={onPress ? 0.7 : 1}
     >
       <View style={styles.rowIcon}>
-        <Text style={{ fontSize: 14 }}>{icon}</Text>
+        {icon}
       </View>
       <View style={{ flex: 1 }}>
         <Text style={[Typography.body, { color: Colors.textPrimary }]}>{label}</Text>
@@ -127,30 +128,30 @@ export default function SettingsScreen() {
           {/* Groups */}
           <Card padding="sm" style={{ marginBottom: 12 }}>
             <SettingsRow
-              icon="◉"
+              icon={<IconCaregiver size={16} color={Colors.primary} strokeWidth={2} />}
               label="Care Recipients"
               value={`${recipientCount} recipient${recipientCount !== 1 ? 's' : ''}`}
               onPress={() => {}}
             />
             <SettingsRow
-              icon="♡"
+              icon={<IconGroup size={16} color={Colors.accent.purple} strokeWidth={2} />}
               label="Family Members"
               value={`${familyCount} viewer${familyCount !== 1 ? 's' : ''} connected`}
               onPress={() => {}}
             />
-            <SettingsRow icon="◆" label="Subscription" value="Basic · $19.99/mo" onPress={() => {}} isLast />
+            <SettingsRow icon={<IconHeart size={16} color={Colors.accent.orange} strokeWidth={2} />} label="Subscription" value="Basic · $19.99/mo" onPress={() => {}} isLast />
           </Card>
 
           <Card padding="sm" style={{ marginBottom: 12 }}>
-            <SettingsRow icon="⬡" label="EVV Configuration" onPress={() => {}} />
-            <SettingsRow icon="▣" label="Compliance Reports" onPress={() => {}} />
-            <SettingsRow icon="◈" label="Earnings History" onPress={() => {}} isLast />
+            <SettingsRow icon={<IconNurture size={16} color={Colors.primary} strokeWidth={2} />} label="EVV Configuration" onPress={() => {}} />
+            <SettingsRow icon={<IconVisit size={16} color={Colors.accent.orange} strokeWidth={2} />} label="Compliance Reports" onPress={() => {}} />
+            <SettingsRow icon={<IconComfort size={16} color={Colors.success} strokeWidth={2} />} label="Earnings History" onPress={() => {}} isLast />
           </Card>
 
           <Card padding="sm" style={{ marginBottom: 24 }}>
-            <SettingsRow icon="◎" label="Security" value="HIPAA · AES-256" onPress={() => {}} />
-            <SettingsRow icon="▲" label="Notifications" onPress={() => {}} />
-            <SettingsRow icon="?" label="Help & Support" onPress={() => {}} isLast />
+            <SettingsRow icon={<IconCaregiver size={16} color={Colors.primary} strokeWidth={2} />} label="Security" value="HIPAA · AES-256" onPress={() => {}} />
+            <SettingsRow icon={<IconHeart size={16} color={Colors.accent.pink} strokeWidth={2} />} label="Notifications" onPress={() => {}} />
+            <SettingsRow icon={<IconGroup size={16} color={Colors.accent.purple} strokeWidth={2} />} label="Help & Support" onPress={() => {}} isLast />
           </Card>
 
           <Button
