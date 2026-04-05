@@ -28,23 +28,56 @@ export default function RootLayout() {
       async (event, session) => {
         if (session?.user) {
           const meta = session.user.user_metadata;
+
+          // Load profile to get role and tier
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('user_role, tier, is_onboarded')
+            .eq('id', session.user.id)
+            .single();
+
+          const role = (profile?.user_role as 'caregiver' | 'family') || 'caregiver';
+
           setUser({
             id: session.user.id,
             firstName: meta?.first_name || '',
             lastName: meta?.last_name || '',
             email: session.user.email || '',
-            tier: 'basic',
+            role,
+            tier: profile?.tier || 'basic',
             recipients: [],
             activeVisit: null,
           });
 
-          // Check if onboarded
-          const { data: recipients } = await supabase
-            .from('recipients')
-            .select('id')
-            .eq('caregiver_id', session.user.id)
-            .limit(1);
-          setOnboarded(!!(recipients && recipients.length > 0));
+          if (role === 'family') {
+            // Link any pending family invites to this user
+            await supabase
+              .from('family_members')
+              .update({ user_id: session.user.id, invite_accepted: true })
+              .eq('email', session.user.email)
+              .is('user_id', null);
+            setOnboarded(true);
+          } else {
+            // Check if this caregiver email has a family invite (they might be both)
+            const { data: pendingInvite } = await supabase
+              .from('family_members')
+              .select('id')
+              .eq('email', session.user.email)
+              .is('user_id', null);
+            if (pendingInvite && pendingInvite.length > 0) {
+              await supabase
+                .from('family_members')
+                .update({ user_id: session.user.id, invite_accepted: true })
+                .eq('email', session.user.email)
+                .is('user_id', null);
+            }
+            const { data: recipients } = await supabase
+              .from('recipients')
+              .select('id')
+              .eq('caregiver_id', session.user.id)
+              .limit(1);
+            setOnboarded(profile?.is_onboarded || !!(recipients && recipients.length > 0));
+          }
         } else if (event === 'SIGNED_OUT') {
           logout();
         }

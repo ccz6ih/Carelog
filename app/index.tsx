@@ -1,23 +1,25 @@
 /**
- * Entry point — routes to landing, auth, or main tabs
+ * Entry point — routes based on auth state and user role
+ * Caregivers → tabs, Family viewers → family dashboard
  */
 import { Redirect } from 'expo-router';
 import { useAppStore } from '@/store/useAppStore';
 
 export default function Index() {
-  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
-  const isOnboarded = useAppStore((s) => s.isOnboarded);
+  const { isAuthenticated, isOnboarded, user } = useAppStore();
 
-  // Unauthenticated: show landing page
   if (!isAuthenticated) {
     return <Redirect href="/(marketing)" />;
   }
 
-  // Authenticated but not onboarded: onboarding flow
+  // Family viewers go to their read-only dashboard
+  if (user?.role === 'family') {
+    return <Redirect href="/family-dashboard" />;
+  }
+
   if (!isOnboarded) {
     return <Redirect href="/(auth)/onboarding" />;
   }
 
-  // Fully authenticated and onboarded: main app
   return <Redirect href="/(tabs)" />;
 }

@@ -36,12 +36,15 @@ export type NotificationType =
 // CORE MODELS (matches docs/API.md)
 // ============================================================
 
+export type UserRole = 'caregiver' | 'family';
+
 export interface User {
   id: string;
   firstName: string;
   lastName: string;
   email: string;
   phone?: string;
+  role: UserRole;
   tier: SubscriptionTier;
   subscriptionStatus?: SubscriptionStatus;
   subscriptionRenewsAt?: string;

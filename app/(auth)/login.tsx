@@ -22,6 +22,7 @@ import Layout from '@/constants/Layout';
 import Button from '@/components/ui/Button';
 import { useAppStore } from '@/store/useAppStore';
 import { api } from '@/services';
+import { supabase } from '@/services/supabase';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -49,24 +50,38 @@ export default function LoginScreen() {
     if (authError) { showError(authError.message); return; }
 
     if (data.user) {
-      const { data: profile } = await api.auth.me();
-      const meta = profile.user?.user_metadata;
+      // Load profile to get role
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('user_role, tier, is_onboarded')
+        .eq('id', data.user.id)
+        .single();
+
+      const meta = data.user.user_metadata;
+      const role = (profileData?.user_role as 'caregiver' | 'family') || 'caregiver';
+
       setUser({
         id: data.user.id,
         firstName: meta?.first_name || '',
         lastName: meta?.last_name || '',
         email: data.user.email || '',
-        tier: 'basic',
+        role,
+        tier: profileData?.tier || 'basic',
         recipients: [],
         activeVisit: null,
       });
 
-      const { data: recipients } = await api.recipients.list();
-      if (recipients && recipients.length > 0) {
+      if (role === 'family') {
         setOnboarded(true);
-        router.replace('/(tabs)');
+        router.replace('/family-dashboard');
       } else {
-        router.replace('/(auth)/onboarding');
+        const { data: recipients } = await api.recipients.list();
+        if (recipients && recipients.length > 0) {
+          setOnboarded(true);
+          router.replace('/(tabs)');
+        } else {
+          router.replace('/(auth)/onboarding');
+        }
       }
     }
   };
@@ -88,6 +103,7 @@ export default function LoginScreen() {
         firstName,
         lastName,
         email: data.user.email || '',
+        role: 'caregiver',
         tier: 'basic',
         recipients: [],
         activeVisit: null,
@@ -190,7 +206,7 @@ export default function LoginScreen() {
 
               <View style={styles.buttons}>
                 <Button
-                  title={isSignUp ? 'Create Account' : 'Sign In'}
+                  title={isSignUp ? 'Create Caregiver Account' : 'Sign In'}
                   onPress={isSignUp ? handleSignUp : handleLogin}
                   loading={loading}
                   size="lg"
@@ -204,6 +220,41 @@ export default function LoginScreen() {
                   size="lg"
                   fullWidth
                 />
+
+                {isSignUp && (
+                  <Button
+                    title="Join as Family Viewer (Free)"
+                    onPress={async () => {
+                      if (!email || !password) { showError('Please enter your email and password.'); return; }
+                      if (!firstName || !lastName) { showError('Please enter your first and last name.'); return; }
+                      setError('');
+                      setLoading(true);
+                      const { data, error: authError } = await supabase.auth.signUp({
+                        email, password,
+                        options: { data: { first_name: firstName, last_name: lastName } },
+                      });
+                      if (authError) { setLoading(false); showError(authError.message); return; }
+                      if (data.user) {
+                        // Set role to family
+                        await supabase.from('profiles').update({ user_role: 'family' }).eq('id', data.user.id);
+                        // Link any pending invites
+                        await supabase.from('family_members')
+                          .update({ user_id: data.user.id, invite_accepted: true })
+                          .eq('email', email).is('user_id', null);
+                        setUser({
+                          id: data.user.id, firstName, lastName, email: data.user.email || '',
+                          role: 'family', tier: 'basic', recipients: [], activeVisit: null,
+                        });
+                        setOnboarded(true);
+                        setLoading(false);
+                        router.replace('/family-dashboard');
+                      }
+                    }}
+                    variant="ghost"
+                    size="lg"
+                    fullWidth
+                  />
+                )}
               </View>
             </View>
 

@@ -69,27 +69,32 @@ export default function DashboardScreen() {
     });
   }, []);
 
-  // Load first recipient
+  // Load recipients and select first one
   useEffect(() => {
     async function loadRecipient() {
-      const { data } = await supabase
-        .from('recipients')
-        .select('*')
-        .eq('caregiver_id', user?.id)
-        .eq('is_active', true)
-        .limit(1)
-        .single();
-      if (data) {
-        setRecipient({
-          id: data.id,
-          firstName: data.first_name,
-          lastName: data.last_name,
-          relationship: data.relationship,
-          providerId: data.provider_id,
-          recipientId: data.recipient_id,
-          state: data.state,
-          aggregator: data.aggregator,
-        });
+      try {
+        const { data } = await supabase
+          .from('recipients')
+          .select('*')
+          .eq('caregiver_id', user!.id)
+          .eq('is_active', true)
+          .order('created_at', { ascending: true });
+
+        if (data && data.length > 0) {
+          const r = data[0];
+          setRecipient({
+            id: r.id,
+            firstName: r.first_name,
+            lastName: r.last_name,
+            relationship: r.relationship,
+            providerId: r.provider_id,
+            recipientId: r.recipient_id,
+            state: r.state,
+            aggregator: r.aggregator,
+          });
+        }
+      } catch (e) {
+        console.error('[Dashboard] loadRecipient', e);
       }
     }
     if (user?.id) loadRecipient();
@@ -150,15 +155,16 @@ export default function DashboardScreen() {
 
   const handleClockToggle = async () => {
     if (isClockedIn) {
+      // === CLOCK OUT ===
       setEVVStatus('clocked_out');
-      const location = await getLocation();
+      const loc = await getLocation();
       const clockOutTime = new Date().toISOString();
 
       if (activeVisit) {
         await supabase.from('visits').update({
           clock_out_time: clockOutTime,
-          clock_out_lat: location?.coords.latitude,
-          clock_out_lng: location?.coords.longitude,
+          clock_out_lat: loc?.lat || null,
+          clock_out_lng: loc?.lng || null,
           evv_status: 'clocked_out',
         }).eq('id', activeVisit.id);
 
@@ -166,7 +172,7 @@ export default function DashboardScreen() {
           const updatedVisit = {
             ...activeVisit,
             clockOutTime: clockOutTime,
-            clockOutLocation: location ? { lat: location.coords.latitude, lng: location.coords.longitude } : null,
+            clockOutLocation: loc ? { lat: loc.lat, lng: loc.lng } : null,
           };
           const result = await submitEVV(updatedVisit, recipient);
           const newStatus = result.success ? 'submitted' : 'error';
@@ -182,15 +188,13 @@ export default function DashboardScreen() {
               confirmation_id: result.confirmationId,
             });
           } else {
-            // Queue for offline retry
             await enqueueEVV(updatedVisit, recipient);
           }
 
           // Log family activity
           const ms = new Date(clockOutTime).getTime() - new Date(activeVisit.clockInTime).getTime();
           const durationStr = `${Math.floor(ms / 3600000)}h ${Math.floor((ms % 3600000) / 60000)}m`;
-          const caregiverName = `${user?.firstName || 'Caregiver'}`;
-          await logVisitCompleted(recipient.id, activeVisit.id, caregiverName, durationStr);
+          await logVisitCompleted(recipient.id, activeVisit.id, user?.firstName || 'Caregiver', durationStr);
 
           setTimeout(() => endVisit(), 2500);
         } else {
@@ -199,26 +203,29 @@ export default function DashboardScreen() {
         }
       }
     } else {
+      // === CLOCK IN ===
       if (!recipient) {
-        const msg = 'Please add a care recipient in Settings first.';
-        Platform.OS === 'web' ? alert(msg) : Alert.alert('No Recipient', msg);
+        const msg = 'Please add a care recipient first. Go to Settings → Care Recipients.';
+        Platform.OS === 'web' ? alert(msg) : Alert.alert('No Care Recipient', msg);
         return;
       }
 
-      const location = await getLocation();
-      const recipientName = `${recipient.firstName} ${recipient.lastName}`.trim();
+      const loc = await getLocation();
+      const recipientName = recipient.relationship
+        ? `${recipient.relationship.charAt(0).toUpperCase() + recipient.relationship.slice(1)} (${recipient.firstName})`
+        : `${recipient.firstName} ${recipient.lastName}`.trim();
 
-      const { data: newVisit, error } = await supabase.from('visits').insert({
+      const { data: newVisit, error: insertError } = await supabase.from('visits').insert({
         caregiver_id: user?.id,
         recipient_id: recipient.id,
-        clock_in_lat: location?.coords.latitude,
-        clock_in_lng: location?.coords.longitude,
+        clock_in_lat: loc?.lat || null,
+        clock_in_lng: loc?.lng || null,
         evv_status: 'clocked_in',
       }).select().single();
 
-      if (error) {
-        const msg = 'Failed to start visit. Please try again.';
-        Platform.OS === 'web' ? alert(msg) : Alert.alert('Error', msg);
+      if (insertError || !newVisit) {
+        const msg = insertError?.message || 'Failed to start visit. Please try again.';
+        Platform.OS === 'web' ? alert(msg) : Alert.alert('Visit Error', msg);
         return;
       }
 
@@ -228,7 +235,7 @@ export default function DashboardScreen() {
         recipientName,
         clockInTime: newVisit.clock_in_time,
         clockOutTime: null,
-        clockInLocation: { lat: location?.coords.latitude || 0, lng: location?.coords.longitude || 0 },
+        clockInLocation: { lat: loc?.lat || 0, lng: loc?.lng || 0 },
         clockOutLocation: null,
         tasks: [],
         notes: '',
@@ -236,8 +243,7 @@ export default function DashboardScreen() {
         evvStatus: 'clocked_in',
       });
 
-      // Log family activity
-      await logVisitStarted(recipient.id, newVisit.id, `${user?.firstName || 'Caregiver'}`);
+      await logVisitStarted(recipient.id, newVisit.id, user?.firstName || 'Caregiver');
     }
   };
 
