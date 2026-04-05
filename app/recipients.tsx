@@ -91,8 +91,14 @@ export default function RecipientsScreen() {
       else if (name.includes('calevv')) aggregator = 'calevv';
     }
 
-    const { error } = await supabase.from('recipients').insert({
-      caregiver_id: user?.id,
+    if (!user?.id) {
+      alert('Not signed in. Please sign out and sign back in.');
+      setSaving(false);
+      return;
+    }
+
+    const insertData = {
+      caregiver_id: user.id,
       first_name: firstName,
       last_name: lastName || '',
       relationship: relationship || 'family',
@@ -100,11 +106,15 @@ export default function RecipientsScreen() {
       recipient_id: recipientId || '',
       state: state.toUpperCase().slice(0, 2),
       aggregator,
-    });
+    };
+
+    console.log('[Recipients] Inserting:', insertData);
+    const { data: insertResult, error } = await supabase.from('recipients').insert(insertData).select();
+    console.log('[Recipients] Result:', insertResult, 'Error:', error);
 
     setSaving(false);
     if (error) {
-      const msg = error.message;
+      const msg = `Failed to add recipient: ${error.message}`;
       Platform.OS === 'web' ? alert(msg) : Alert.alert('Error', msg);
       return;
     }

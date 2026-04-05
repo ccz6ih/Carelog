@@ -83,20 +83,29 @@ export default function FamilyMembersScreen() {
       return;
     }
 
+    if (!user?.id || !selectedRecipientId) {
+      alert('Missing account or recipient information. Please try again.');
+      setSending(false);
+      return;
+    }
+
     setSending(true);
-    const { error } = await supabase.from('family_members').insert({
+    const insertData = {
       name: inviteName,
-      email: inviteEmail,
+      email: inviteEmail.toLowerCase().trim(),
       relationship: inviteRelationship || 'Family',
       recipient_id: selectedRecipientId,
-      invited_by: user?.id,
-    });
+      invited_by: user.id,
+    };
+    console.log('[FamilyMembers] Inviting:', insertData);
+    const { data: insertResult, error } = await supabase.from('family_members').insert(insertData).select();
+    console.log('[FamilyMembers] Result:', insertResult, 'Error:', error);
     setSending(false);
 
     if (error) {
       const msg = error.message.includes('idx_family_unique')
         ? 'This person is already invited for this care recipient.'
-        : error.message;
+        : `Invite failed: ${error.message}`;
       Platform.OS === 'web' ? alert(msg) : Alert.alert('Error', msg);
       return;
     }

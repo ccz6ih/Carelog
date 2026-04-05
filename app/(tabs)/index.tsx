@@ -154,6 +154,7 @@ export default function DashboardScreen() {
   }, []);
 
   const handleClockToggle = async () => {
+    try {
     if (isClockedIn) {
       // === CLOCK OUT ===
       setEVVStatus('clocked_out');
@@ -215,16 +216,24 @@ export default function DashboardScreen() {
         ? `${recipient.relationship.charAt(0).toUpperCase() + recipient.relationship.slice(1)} (${recipient.firstName})`
         : `${recipient.firstName} ${recipient.lastName}`.trim();
 
-      const { data: newVisit, error: insertError } = await supabase.from('visits').insert({
-        caregiver_id: user?.id,
+      if (!user?.id) {
+        alert('Not signed in. Please sign out and sign back in.');
+        return;
+      }
+
+      const visitData = {
+        caregiver_id: user.id,
         recipient_id: recipient.id,
         clock_in_lat: loc?.lat || null,
         clock_in_lng: loc?.lng || null,
-        evv_status: 'clocked_in',
-      }).select().single();
+        evv_status: 'clocked_in' as const,
+      };
+      console.log('[Dashboard] Clock In:', visitData);
+      const { data: newVisit, error: insertError } = await supabase.from('visits').insert(visitData).select().single();
+      console.log('[Dashboard] Visit result:', newVisit, 'Error:', insertError);
 
       if (insertError || !newVisit) {
-        const msg = insertError?.message || 'Failed to start visit. Please try again.';
+        const msg = `Clock in failed: ${insertError?.message || 'Unknown error'}`;
         Platform.OS === 'web' ? alert(msg) : Alert.alert('Visit Error', msg);
         return;
       }
@@ -244,6 +253,12 @@ export default function DashboardScreen() {
       });
 
       await logVisitStarted(recipient.id, newVisit.id, user?.firstName || 'Caregiver');
+    }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Something went wrong';
+      console.error('[Dashboard] Clock error:', e);
+      Platform.OS === 'web' ? alert(`Error: ${msg}`) : Alert.alert('Error', msg);
+      setEVVStatus('idle');
     }
   };
 
