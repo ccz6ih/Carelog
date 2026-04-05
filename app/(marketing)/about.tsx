@@ -275,6 +275,7 @@ const styles = StyleSheet.create({
   heroTitle: {
     ...Typography.h1,
     fontSize: Platform.OS === 'web' ? 48 : 36,
+    lineHeight: Platform.OS === 'web' ? 64 : 48,
     color: Colors.textPrimary,
     textAlign: 'center',
     marginTop: Layout.spacing.lg,

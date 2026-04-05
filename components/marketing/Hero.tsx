@@ -6,7 +6,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { IconCaregiver } from '@/components/icons/CareIcons';
+import { IconHeart } from '@/components/icons/CareIcons';
 import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
 import Layout from '@/constants/Layout';
@@ -39,7 +39,7 @@ export default function Hero({ onStartTrial, onLearnMore }: HeroProps) {
         <View style={styles.content}>
           {/* Illustration */}
           <View style={styles.illustration}>
-            <IconCaregiver size={Platform.OS === 'web' ? 160 : 120} color={Colors.primary} strokeWidth={1.5} />
+            <IconHeart size={Platform.OS === 'web' ? 240 : 160} color={Colors.accent.pink} strokeWidth={1.8} />
           </View>
 
           {/* Headline */}
@@ -101,16 +101,16 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   illustration: {
-    marginBottom: Layout.spacing.xxl,
+    marginBottom: Layout.spacing.xxl + Layout.spacing.md,
     opacity: 0.95,
   },
   headline: {
     ...Typography.h1,
     fontSize: Platform.OS === 'web' ? 56 : 36,
-    lineHeight: Platform.OS === 'web' ? 68 : 44,
+    lineHeight: Platform.OS === 'web' ? 72 : 48,
     color: Colors.textPrimary,
     textAlign: 'center',
-    marginBottom: Layout.spacing.lg,
+    marginBottom: Layout.spacing.lg + Layout.spacing.xs,
     fontWeight: '700',
   },
   subheadline: {
