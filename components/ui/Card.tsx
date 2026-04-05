@@ -1,9 +1,10 @@
 /**
- * CareLog Card — matches pitch deck card style
- * Dark elevated surface with optional colored left border
+ * CareLog Card — Glassmorphic elevated surface
+ * Frosted glass with subtle border glow, layered depth
  */
 import React from 'react';
-import { View, StyleSheet, ViewStyle } from 'react-native';
+import { View, StyleSheet, ViewStyle, Platform } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/Colors';
 import Layout from '@/constants/Layout';
 
@@ -12,6 +13,8 @@ interface CardProps {
   borderColor?: string;
   style?: ViewStyle;
   elevated?: boolean;
+  variant?: 'default' | 'glass' | 'outline';
+  padding?: 'sm' | 'md' | 'lg';
 }
 
 export default function Card({
@@ -19,16 +22,44 @@ export default function Card({
   borderColor,
   style,
   elevated = false,
+  variant = 'default',
+  padding = 'md',
 }: CardProps) {
+  const paddingMap = {
+    sm: Layout.spacing.md,
+    md: Layout.spacing.lg,
+    lg: Layout.spacing.xl,
+  };
+
+  const cardStyle = [
+    styles.card,
+    { padding: paddingMap[padding] },
+    variant === 'glass' && styles.glass,
+    variant === 'outline' && styles.outline,
+    elevated && Layout.shadow.md,
+    borderColor && { borderLeftWidth: 3, borderLeftColor: borderColor },
+    style,
+  ];
+
+  if (variant === 'glass' && Platform.OS === 'web') {
+    return (
+      <View
+        style={[
+          cardStyle,
+          {
+            // @ts-ignore — web-only CSS
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+          } as any,
+        ]}
+      >
+        {children}
+      </View>
+    );
+  }
+
   return (
-    <View
-      style={[
-        styles.card,
-        elevated && styles.elevated,
-        borderColor && { borderLeftWidth: 3, borderLeftColor: borderColor },
-        style,
-      ]}
-    >
+    <View style={cardStyle}>
       {children}
     </View>
   );
@@ -38,15 +69,15 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.backgroundCard,
     borderRadius: Layout.radius.lg,
-    padding: Layout.spacing.lg,
     borderWidth: 1,
     borderColor: Colors.border.card,
   },
-  elevated: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+  glass: {
+    backgroundColor: Colors.glass.background,
+    borderColor: Colors.glass.border,
+  },
+  outline: {
+    backgroundColor: 'transparent',
+    borderColor: Colors.border.cardHover,
   },
 });

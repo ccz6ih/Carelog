@@ -1,6 +1,6 @@
 /**
  * CareLog Settings Screen
- * Account, subscription tier, recipients, security
+ * Clean grouped sections, responsive layout
  */
 import React, { useEffect, useState } from 'react';
 import {
@@ -10,6 +10,7 @@ import {
   ScrollView,
   SafeAreaView,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 import Colors from '@/constants/Colors';
@@ -26,26 +27,29 @@ interface SettingsRowProps {
   label: string;
   value?: string;
   onPress?: () => void;
+  isLast?: boolean;
 }
 
-function SettingsRow({ icon, label, value, onPress }: SettingsRowProps) {
+function SettingsRow({ icon, label, value, onPress, isLast }: SettingsRowProps) {
   return (
     <TouchableOpacity
-      style={styles.row}
+      style={[styles.row, isLast && { borderBottomWidth: 0 }]}
       onPress={onPress}
       activeOpacity={onPress ? 0.7 : 1}
     >
-      <Text style={{ fontSize: 18 }}>{icon}</Text>
+      <View style={styles.rowIcon}>
+        <Text style={{ fontSize: 14 }}>{icon}</Text>
+      </View>
       <View style={{ flex: 1 }}>
         <Text style={[Typography.body, { color: Colors.textPrimary }]}>{label}</Text>
         {value && (
-          <Text style={[Typography.caption, { color: Colors.textMuted, marginTop: 2 }]}>
+          <Text style={[Typography.micro, { color: Colors.textMuted, marginTop: 2, letterSpacing: 0.3 }]}>
             {value}
           </Text>
         )}
       </View>
       {onPress && (
-        <Text style={{ color: Colors.textMuted, fontSize: 18 }}>›</Text>
+        <Text style={{ color: Colors.textMuted, fontSize: 14 }}>›</Text>
       )}
     </TouchableOpacity>
   );
@@ -64,7 +68,6 @@ export default function SettingsScreen() {
         .eq('caregiver_id', user?.id);
       if (rCount !== null) setRecipientCount(rCount);
 
-      // Get family members across all recipients
       const { data: recipients } = await supabase
         .from('recipients')
         .select('id')
@@ -89,72 +92,78 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <Text style={[Typography.sectionLabel, { color: Colors.primary }]}>SETTINGS</Text>
-        <Text style={[Typography.h1, { color: Colors.textPrimary, marginTop: 4, marginBottom: 24 }]}>
-          Account
-        </Text>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <View style={styles.content}>
+          <Text style={[Typography.sectionLabel, { color: Colors.primary }]}>SETTINGS</Text>
+          <Text style={[Typography.h1, { color: Colors.textPrimary, marginTop: 4, marginBottom: 24 }]}>
+            Account
+          </Text>
 
-        {/* Profile Card */}
-        <Card borderColor={Colors.primary} style={{ marginBottom: 24 }}>
-          <View style={styles.profileHeader}>
-            <View style={styles.avatar}>
-              <Text style={{ fontSize: 24 }}>👤</Text>
+          {/* Profile Card */}
+          <Card style={{ marginBottom: 24 }}>
+            <View style={styles.profileHeader}>
+              <View style={styles.avatar}>
+                <Text style={[Typography.h3, { color: Colors.primary }]}>
+                  {user?.firstName?.[0]}{user?.lastName?.[0]}
+                </Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[Typography.h3, { color: Colors.textPrimary }]}>
+                  {user?.firstName} {user?.lastName}
+                </Text>
+                <Text style={[Typography.caption, { color: Colors.textMuted, marginTop: 2 }]}>
+                  {user?.email}
+                </Text>
+              </View>
+              <Badge
+                label={user?.tier?.toUpperCase() || 'BASIC'}
+                color={Colors.tier[user?.tier || 'basic']}
+                variant="dot"
+                size="sm"
+              />
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[Typography.h3, { color: Colors.textPrimary }]}>
-                {user?.firstName} {user?.lastName}
-              </Text>
-              <Text style={[Typography.bodySm, { color: Colors.textSecondary }]}>
-                {user?.email}
-              </Text>
-            </View>
-            <Badge
-              label={user?.tier?.toUpperCase() || 'BASIC'}
-              color={Colors.tier[user?.tier || 'basic']}
+          </Card>
+
+          {/* Groups */}
+          <Card padding="sm" style={{ marginBottom: 12 }}>
+            <SettingsRow
+              icon="◉"
+              label="Care Recipients"
+              value={`${recipientCount} recipient${recipientCount !== 1 ? 's' : ''}`}
+              onPress={() => {}}
             />
-          </View>
-        </Card>
+            <SettingsRow
+              icon="♡"
+              label="Family Members"
+              value={`${familyCount} viewer${familyCount !== 1 ? 's' : ''} connected`}
+              onPress={() => {}}
+            />
+            <SettingsRow icon="◆" label="Subscription" value="Basic · $19.99/mo" onPress={() => {}} isLast />
+          </Card>
 
-        {/* Settings Groups */}
-        <Card style={{ marginBottom: 16 }}>
-          <SettingsRow
-            icon="👩‍⚕️"
-            label="Care Recipients"
-            value={`${recipientCount} recipient${recipientCount !== 1 ? 's' : ''}`}
-            onPress={() => {}}
+          <Card padding="sm" style={{ marginBottom: 12 }}>
+            <SettingsRow icon="⬡" label="EVV Configuration" onPress={() => {}} />
+            <SettingsRow icon="▣" label="Compliance Reports" onPress={() => {}} />
+            <SettingsRow icon="◈" label="Earnings History" onPress={() => {}} isLast />
+          </Card>
+
+          <Card padding="sm" style={{ marginBottom: 24 }}>
+            <SettingsRow icon="◎" label="Security" value="HIPAA · AES-256" onPress={() => {}} />
+            <SettingsRow icon="▲" label="Notifications" onPress={() => {}} />
+            <SettingsRow icon="?" label="Help & Support" onPress={() => {}} isLast />
+          </Card>
+
+          <Button
+            title="Sign Out"
+            onPress={handleLogout}
+            variant="outline"
+            fullWidth
           />
-          <SettingsRow
-            icon="👨‍👩‍👧"
-            label="Family Members"
-            value={`${familyCount} viewer${familyCount !== 1 ? 's' : ''} connected`}
-            onPress={() => {}}
-          />
-          <SettingsRow icon="💎" label="Subscription" value="Basic · $19.99/mo" onPress={() => {}} />
-        </Card>
 
-        <Card style={{ marginBottom: 16 }}>
-          <SettingsRow icon="🏥" label="EVV Configuration" onPress={() => {}} />
-          <SettingsRow icon="📊" label="Compliance Reports" onPress={() => {}} />
-          <SettingsRow icon="💰" label="Earnings History" onPress={() => {}} />
-        </Card>
-
-        <Card style={{ marginBottom: 16 }}>
-          <SettingsRow icon="🔒" label="Security" value="HIPAA · AES-256" onPress={() => {}} />
-          <SettingsRow icon="🔔" label="Notifications" onPress={() => {}} />
-          <SettingsRow icon="❓" label="Help & Support" onPress={() => {}} />
-        </Card>
-
-        <Button
-          title="Sign Out"
-          onPress={handleLogout}
-          variant="outline"
-          style={{ marginTop: 8 }}
-        />
-
-        <Text style={[Typography.caption, { color: Colors.textMuted, textAlign: 'center', marginTop: 24 }]}>
-          CareLog v1.0.0 · Build smart. Print on automatic.
-        </Text>
+          <Text style={[Typography.micro, { color: Colors.textMuted, textAlign: 'center', marginTop: 28, letterSpacing: 1 }]}>
+            CARELOG V1.0.0
+          </Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -166,20 +175,27 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   scroll: {
-    padding: Layout.spacing.xl,
-    paddingTop: 16,
+    alignItems: 'center',
     paddingBottom: 48,
+  },
+  content: {
+    width: '100%',
+    maxWidth: Layout.content.maxWidth,
+    padding: Layout.spacing.lg,
+    paddingTop: Platform.OS === 'web' ? 24 : 16,
   },
   profileHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 14,
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: Colors.surface,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.primary + '15',
+    borderWidth: 1,
+    borderColor: Colors.primary + '30',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -188,7 +204,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     paddingVertical: 14,
+    paddingHorizontal: Layout.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border.card,
+    borderBottomColor: Colors.border.subtle,
+  },
+  rowIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

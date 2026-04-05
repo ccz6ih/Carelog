@@ -1,7 +1,6 @@
 /**
  * CareLog Dashboard — The Hero Screen
- * Clock In/Out button center stage.
- * Quick stats, active visit status, recent activity.
+ * Clock In/Out center stage. Live stats. Responsive layout.
  */
 import React, { useState, useEffect, useCallback } from 'react';
 import {
@@ -11,6 +10,7 @@ import {
   ScrollView,
   SafeAreaView,
   Alert,
+  Platform,
 } from 'react-native';
 import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
@@ -23,6 +23,12 @@ import { supabase } from '@/services/supabase';
 import { useLocation } from '@/hooks/useLocation';
 import { submitEVV } from '@/services/evv';
 import type { CareRecipient } from '@/types';
+
+interface StatItem {
+  label: string;
+  value: string;
+  color: string;
+}
 
 export default function DashboardScreen() {
   const {
@@ -38,7 +44,12 @@ export default function DashboardScreen() {
 
   const { getLocation } = useLocation();
   const [recipient, setRecipient] = useState<CareRecipient | null>(null);
-  const [stats, setStats] = useState({ visits: 0, hours: '0h', compliance: '—', appreciated: '$0' });
+  const [stats, setStats] = useState<StatItem[]>([
+    { label: 'Visits', value: '—', color: Colors.primary },
+    { label: 'Hours', value: '—', color: Colors.accent.orange },
+    { label: 'Compliant', value: '—', color: Colors.success },
+    { label: 'Tips', value: '—', color: Colors.accent.purple },
+  ]);
 
   const isClockedIn = evvStatus === 'clocked_in';
 
@@ -92,12 +103,12 @@ export default function DashboardScreen() {
         const submitted = monthVisits.filter((v) => v.evv_status === 'submitted').length;
         const complianceRate = completed.length > 0 ? Math.round((submitted / completed.length) * 100) : 0;
 
-        setStats({
-          visits: completed.length,
-          hours: `${Math.round(totalMinutes / 60)}h`,
-          compliance: `${complianceRate}%`,
-          appreciated: '$0',
-        });
+        setStats([
+          { label: 'Visits', value: String(completed.length), color: Colors.primary },
+          { label: 'Hours', value: `${Math.round(totalMinutes / 60)}h`, color: Colors.accent.orange },
+          { label: 'Compliant', value: completed.length > 0 ? `${complianceRate}%` : '—', color: Colors.success },
+          { label: 'Tips', value: '$0', color: Colors.accent.purple },
+        ]);
       }
     }
     if (user?.id) loadStats();
@@ -118,20 +129,15 @@ export default function DashboardScreen() {
     const hrs = Math.floor(totalSeconds / 3600);
     const mins = Math.floor((totalSeconds % 3600) / 60);
     const secs = totalSeconds % 60;
-    return `${hrs.toString().padStart(2, '0')}:${mins
-      .toString()
-      .padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }, []);
 
   const handleClockToggle = async () => {
     if (isClockedIn) {
-      // Clock OUT
       setEVVStatus('clocked_out');
-
       const location = await getLocation();
       const clockOutTime = new Date().toISOString();
 
-      // Update visit in DB
       if (activeVisit) {
         await supabase.from('visits').update({
           clock_out_time: clockOutTime,
@@ -140,7 +146,6 @@ export default function DashboardScreen() {
           evv_status: 'clocked_out',
         }).eq('id', activeVisit.id);
 
-        // Auto-submit EVV
         if (recipient) {
           const updatedVisit = {
             ...activeVisit,
@@ -148,13 +153,11 @@ export default function DashboardScreen() {
             clockOutLocation: location ? { lat: location.coords.latitude, lng: location.coords.longitude } : null,
           };
           const result = await submitEVV(updatedVisit, recipient);
-
           const newStatus = result.success ? 'submitted' : 'error';
           setEVVStatus(newStatus);
           await supabase.from('visits').update({ evv_status: newStatus }).eq('id', activeVisit.id);
 
           if (result.success) {
-            // Log EVV submission
             await supabase.from('evv_submissions').insert({
               visit_id: activeVisit.id,
               aggregator: recipient.aggregator,
@@ -163,24 +166,22 @@ export default function DashboardScreen() {
               confirmation_id: result.confirmationId,
             });
           }
-
-          setTimeout(() => endVisit(), 2000);
+          setTimeout(() => endVisit(), 2500);
         } else {
           setEVVStatus('submitted');
-          setTimeout(() => endVisit(), 2000);
+          setTimeout(() => endVisit(), 2500);
         }
       }
     } else {
-      // Clock IN
       if (!recipient) {
-        Alert.alert('No Recipient', 'Please add a care recipient in Settings first.');
+        const msg = 'Please add a care recipient in Settings first.';
+        Platform.OS === 'web' ? alert(msg) : Alert.alert('No Recipient', msg);
         return;
       }
 
       const location = await getLocation();
       const recipientName = `${recipient.firstName} ${recipient.lastName}`.trim();
 
-      // Create visit in DB
       const { data: newVisit, error } = await supabase.from('visits').insert({
         caregiver_id: user?.id,
         recipient_id: recipient.id,
@@ -190,7 +191,8 @@ export default function DashboardScreen() {
       }).select().single();
 
       if (error) {
-        Alert.alert('Error', 'Failed to start visit. Please try again.');
+        const msg = 'Failed to start visit. Please try again.';
+        Platform.OS === 'web' ? alert(msg) : Alert.alert('Error', msg);
         return;
       }
 
@@ -200,10 +202,7 @@ export default function DashboardScreen() {
         recipientName,
         clockInTime: newVisit.clock_in_time,
         clockOutTime: null,
-        clockInLocation: {
-          lat: location?.coords.latitude || 0,
-          lng: location?.coords.longitude || 0,
-        },
+        clockInLocation: { lat: location?.coords.latitude || 0, lng: location?.coords.longitude || 0 },
         clockOutLocation: null,
         tasks: [],
         notes: '',
@@ -219,86 +218,101 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View>
-            <Text style={[Typography.sectionLabel, { color: Colors.primary }]}>
-              DASHBOARD
-            </Text>
-            <Text style={[Typography.h1, { color: Colors.textPrimary, marginTop: 4 }]}>
-              Hi, {user?.firstName || 'Caregiver'} 👋
-            </Text>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.content}>
+          {/* Header */}
+          <View style={styles.header}>
+            <View>
+              <Text style={[Typography.sectionLabel, { color: Colors.primary }]}>
+                DASHBOARD
+              </Text>
+              <Text style={[Typography.h1, { color: Colors.textPrimary, marginTop: 4 }]}>
+                Hi, {user?.firstName || 'Caregiver'}
+              </Text>
+            </View>
+            <Badge
+              label={user?.tier?.toUpperCase() || 'BASIC'}
+              color={Colors.tier[user?.tier || 'basic']}
+              variant="dot"
+            />
           </View>
-          <Badge
-            label={user?.tier?.toUpperCase() || 'BASIC'}
-            color={Colors.tier[user?.tier || 'basic']}
+
+          {/* Clock Button */}
+          <ClockButton
+            isClockedIn={isClockedIn}
+            elapsedTime={formatTime(elapsedSeconds)}
+            recipientName={recipientName}
+            onPress={handleClockToggle}
           />
-        </View>
 
-        {/* Clock Button — center stage */}
-        <ClockButton
-          isClockedIn={isClockedIn}
-          elapsedTime={formatTime(elapsedSeconds)}
-          recipientName={recipientName}
-          onPress={handleClockToggle}
-        />
+          {/* EVV Status Banners */}
+          {evvStatus === 'submitted' && (
+            <Card variant="glass" style={{ marginBottom: 16 }}>
+              <View style={styles.statusBanner}>
+                <View style={[styles.statusIcon, { backgroundColor: Colors.success + '20' }]}>
+                  <Text style={{ color: Colors.success, fontSize: 16 }}>✓</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[Typography.h3, { color: Colors.success }]}>EVV Submitted</Text>
+                  <Text style={[Typography.caption, { color: Colors.textMuted, marginTop: 2 }]}>
+                    All 6 data points sent to state Medicaid
+                  </Text>
+                </View>
+              </View>
+            </Card>
+          )}
 
-        {/* EVV Status Banner */}
-        {evvStatus === 'submitted' && (
-          <Card borderColor={Colors.success} style={{ marginTop: 16 }}>
-            <Text style={[Typography.h3, { color: Colors.success }]}>
-              ✓ EVV Submitted Successfully
-            </Text>
-            <Text style={[Typography.bodySm, { color: Colors.textSecondary, marginTop: 4 }]}>
-              All 6 data points auto-submitted to state Medicaid
-            </Text>
-          </Card>
-        )}
+          {evvStatus === 'clocked_out' && (
+            <Card variant="glass" style={{ marginBottom: 16 }}>
+              <View style={styles.statusBanner}>
+                <View style={[styles.statusIcon, { backgroundColor: Colors.warning + '20' }]}>
+                  <Text style={{ color: Colors.warning, fontSize: 16 }}>↑</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[Typography.h3, { color: Colors.warning }]}>Submitting...</Text>
+                  <Text style={[Typography.caption, { color: Colors.textMuted, marginTop: 2 }]}>
+                    Auto-submitting 6 EVV data points
+                  </Text>
+                </View>
+              </View>
+            </Card>
+          )}
 
-        {evvStatus === 'clocked_out' && (
-          <Card borderColor={Colors.warning} style={{ marginTop: 16 }}>
-            <Text style={[Typography.h3, { color: Colors.warning }]}>
-              ⏳ Submitting to Medicaid...
-            </Text>
-            <Text style={[Typography.bodySm, { color: Colors.textSecondary, marginTop: 4 }]}>
-              Auto-submitting 6 EVV data points
-            </Text>
-          </Card>
-        )}
+          {evvStatus === 'error' && (
+            <Card variant="glass" style={{ marginBottom: 16 }}>
+              <View style={styles.statusBanner}>
+                <View style={[styles.statusIcon, { backgroundColor: Colors.error + '20' }]}>
+                  <Text style={{ color: Colors.error, fontSize: 16 }}>!</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[Typography.h3, { color: Colors.error }]}>Submission Failed</Text>
+                  <Text style={[Typography.caption, { color: Colors.textMuted, marginTop: 2 }]}>
+                    Queued for retry. Your data is safe.
+                  </Text>
+                </View>
+              </View>
+            </Card>
+          )}
 
-        {evvStatus === 'error' && (
-          <Card borderColor={Colors.error} style={{ marginTop: 16 }}>
-            <Text style={[Typography.h3, { color: Colors.error }]}>
-              ✕ EVV Submission Failed
-            </Text>
-            <Text style={[Typography.bodySm, { color: Colors.textSecondary, marginTop: 4 }]}>
-              Visit queued for retry. Your data is safe.
-            </Text>
-          </Card>
-        )}
-
-        {/* Quick Stats */}
-        <Text style={[Typography.sectionLabel, { color: Colors.textMuted, marginTop: 32, marginBottom: 16 }]}>
-          THIS MONTH
-        </Text>
-        <View style={styles.statsGrid}>
-          <Card style={styles.statCard}>
-            <Text style={[Typography.heroStat, { color: Colors.primary, fontSize: 28 }]}>{stats.visits}</Text>
-            <Text style={[Typography.caption, { color: Colors.textMuted }]}>Visits</Text>
-          </Card>
-          <Card style={styles.statCard}>
-            <Text style={[Typography.heroStat, { color: Colors.accent.orange, fontSize: 28 }]}>{stats.hours}</Text>
-            <Text style={[Typography.caption, { color: Colors.textMuted }]}>Hours</Text>
-          </Card>
-          <Card style={styles.statCard}>
-            <Text style={[Typography.heroStat, { color: Colors.success, fontSize: 28 }]}>{stats.compliance}</Text>
-            <Text style={[Typography.caption, { color: Colors.textMuted }]}>Compliant</Text>
-          </Card>
-          <Card style={styles.statCard}>
-            <Text style={[Typography.heroStat, { color: Colors.accent.purple, fontSize: 28 }]}>{stats.appreciated}</Text>
-            <Text style={[Typography.caption, { color: Colors.textMuted }]}>Appreciated</Text>
-          </Card>
+          {/* Stats Grid */}
+          <Text style={[Typography.sectionLabel, { color: Colors.textMuted, marginTop: 16, marginBottom: 16 }]}>
+            THIS MONTH
+          </Text>
+          <View style={styles.statsGrid}>
+            {stats.map((stat, i) => (
+              <Card key={i} variant="glass" padding="md" style={styles.statCard}>
+                <Text style={[Typography.display, { color: stat.color, fontSize: 26 }]}>
+                  {stat.value}
+                </Text>
+                <Text style={[Typography.micro, { color: Colors.textMuted, marginTop: 6, textTransform: 'uppercase', letterSpacing: 1 }]}>
+                  {stat.label}
+                </Text>
+              </Card>
+            ))}
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -311,8 +325,14 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   scroll: {
-    padding: Layout.spacing.xl,
-    paddingTop: 16,
+    alignItems: 'center',
+    paddingBottom: 32,
+  },
+  content: {
+    width: '100%',
+    maxWidth: Layout.content.maxWidth,
+    padding: Layout.spacing.lg,
+    paddingTop: Platform.OS === 'web' ? 24 : 16,
   },
   header: {
     flexDirection: 'row',
@@ -320,10 +340,22 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 8,
   },
+  statusBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  statusIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Layout.spacing.md,
+    gap: Layout.spacing.sm,
   },
   statCard: {
     flex: 1,

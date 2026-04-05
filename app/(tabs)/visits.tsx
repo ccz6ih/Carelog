@@ -2,7 +2,7 @@
  * CareLog Visits Screen — Visit history with EVV status
  */
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, ActivityIndicator, Platform } from 'react-native';
 import { format } from 'date-fns';
 import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
@@ -34,7 +34,6 @@ export default function VisitsScreen() {
         .eq('caregiver_id', user?.id)
         .order('created_at', { ascending: false })
         .limit(50);
-
       if (data) setVisits(data as VisitRow[]);
       setLoading(false);
     }
@@ -46,16 +45,13 @@ export default function VisitsScreen() {
     const dateStr = format(inDate, 'EEE, MMM d');
     const inTime = format(inDate, 'h:mm a');
     if (!clockOut) return `${dateStr} · ${inTime} – In Progress`;
-    const outTime = format(new Date(clockOut), 'h:mm a');
-    return `${dateStr} · ${inTime} – ${outTime}`;
+    return `${dateStr} · ${inTime} – ${format(new Date(clockOut), 'h:mm a')}`;
   };
 
   const formatDuration = (clockIn: string, clockOut: string | null) => {
     if (!clockOut) return '—';
     const ms = new Date(clockOut).getTime() - new Date(clockIn).getTime();
-    const hours = Math.floor(ms / 3600000);
-    const minutes = Math.floor((ms % 3600000) / 60000);
-    return `${hours}h ${minutes}m`;
+    return `${Math.floor(ms / 3600000)}h ${Math.floor((ms % 3600000) / 60000)}m`;
   };
 
   const getRecipientName = (r: VisitRow['recipients']) => {
@@ -66,36 +62,42 @@ export default function VisitsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <Text style={[Typography.sectionLabel, { color: Colors.primary }]}>VISIT HISTORY</Text>
-        <Text style={[Typography.h1, { color: Colors.textPrimary, marginTop: 4, marginBottom: 24 }]}>
-          Your Visits
-        </Text>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <View style={styles.content}>
+          <Text style={[Typography.sectionLabel, { color: Colors.primary }]}>VISIT HISTORY</Text>
+          <Text style={[Typography.h1, { color: Colors.textPrimary, marginTop: 4, marginBottom: 24 }]}>
+            Your Visits
+          </Text>
 
-        {loading ? (
-          <ActivityIndicator color={Colors.primary} size="large" style={{ marginTop: 40 }} />
-        ) : visits.length === 0 ? (
-          <View style={styles.empty}>
-            <Text style={{ fontSize: 48 }}>📋</Text>
-            <Text style={[Typography.h3, { color: Colors.textSecondary, marginTop: 16 }]}>
-              No visits yet
-            </Text>
-            <Text style={[Typography.bodySm, { color: Colors.textMuted, marginTop: 8, textAlign: 'center' }]}>
-              Clock in from the Dashboard to start your first visit.
-            </Text>
-          </View>
-        ) : (
-          visits.map((visit) => (
-            <VisitCard
-              key={visit.id}
-              recipientName={getRecipientName(visit.recipients)}
-              date={formatVisitDate(visit.clock_in_time, visit.clock_out_time)}
-              duration={formatDuration(visit.clock_in_time, visit.clock_out_time)}
-              tasksCompleted={0}
-              evvStatus={visit.evv_status}
-            />
-          ))
-        )}
+          {loading ? (
+            <View style={styles.loadingState}>
+              <ActivityIndicator color={Colors.primary} size="large" />
+            </View>
+          ) : visits.length === 0 ? (
+            <View style={styles.emptyState}>
+              <View style={styles.emptyIcon}>
+                <Text style={{ fontSize: 32, opacity: 0.6 }}>📋</Text>
+              </View>
+              <Text style={[Typography.h3, { color: Colors.textSecondary, marginTop: 20 }]}>
+                No visits yet
+              </Text>
+              <Text style={[Typography.bodySm, { color: Colors.textMuted, marginTop: 8, textAlign: 'center' }]}>
+                Clock in from the Dashboard to start your first visit.
+              </Text>
+            </View>
+          ) : (
+            visits.map((visit) => (
+              <VisitCard
+                key={visit.id}
+                recipientName={getRecipientName(visit.recipients)}
+                date={formatVisitDate(visit.clock_in_time, visit.clock_out_time)}
+                duration={formatDuration(visit.clock_in_time, visit.clock_out_time)}
+                tasksCompleted={0}
+                evvStatus={visit.evv_status}
+              />
+            ))
+          )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -107,12 +109,30 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   scroll: {
-    padding: Layout.spacing.xl,
-    paddingTop: 16,
+    alignItems: 'center',
+    paddingBottom: 32,
   },
-  empty: {
+  content: {
+    width: '100%',
+    maxWidth: Layout.content.maxWidth,
+    padding: Layout.spacing.lg,
+    paddingTop: Platform.OS === 'web' ? 24 : 16,
+  },
+  loadingState: {
+    paddingTop: 60,
+    alignItems: 'center',
+  },
+  emptyState: {
     alignItems: 'center',
     marginTop: 60,
     paddingHorizontal: 32,
+  },
+  emptyIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

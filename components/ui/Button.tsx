@@ -1,15 +1,17 @@
 /**
- * CareLog Button — Primary CTA component
- * Gradient teal on dark, matches pitch deck style
+ * CareLog Button — Enterprise-grade CTA
+ * Gradient primary, glass secondary, crisp interactions
  */
 import React from 'react';
 import {
   TouchableOpacity,
+  Pressable,
   Text,
   StyleSheet,
   ActivityIndicator,
   ViewStyle,
-  TextStyle,
+  Platform,
+  View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/Colors';
@@ -25,6 +27,7 @@ interface ButtonProps {
   disabled?: boolean;
   icon?: React.ReactNode;
   style?: ViewStyle;
+  fullWidth?: boolean;
 }
 
 export default function Button({
@@ -36,11 +39,12 @@ export default function Button({
   disabled = false,
   icon,
   style,
+  fullWidth = false,
 }: ButtonProps) {
   const sizeStyles = {
-    sm: { paddingVertical: 10, paddingHorizontal: 16 },
-    md: { paddingVertical: 14, paddingHorizontal: 24 },
-    lg: { paddingVertical: 18, paddingHorizontal: 32 },
+    sm: { paddingVertical: 10, paddingHorizontal: 18, borderRadius: Layout.radius.sm },
+    md: { paddingVertical: 14, paddingHorizontal: 28, borderRadius: Layout.radius.md },
+    lg: { paddingVertical: 18, paddingHorizontal: 36, borderRadius: Layout.radius.md },
   };
 
   const textSizes = {
@@ -49,66 +53,96 @@ export default function Button({
     lg: Typography.button,
   };
 
+  const Touchable = Platform.OS === 'web' ? Pressable : TouchableOpacity;
+
   if (variant === 'primary') {
     return (
-      <TouchableOpacity
+      <Touchable
         onPress={onPress}
         disabled={disabled || loading}
-        activeOpacity={0.8}
-        style={[{ borderRadius: Layout.radius.md, overflow: 'hidden' }, style]}
+        // @ts-ignore
+        activeOpacity={0.85}
+        style={[
+          { borderRadius: sizeStyles[size].borderRadius, overflow: 'hidden' },
+          fullWidth && { width: '100%' },
+          disabled && styles.disabled,
+          style,
+        ]}
       >
         <LinearGradient
-          colors={disabled ? [Colors.textMuted, Colors.textMuted] : [Colors.primary, Colors.primaryLight]}
+          colors={disabled
+            ? [Colors.textMuted, Colors.textMuted]
+            : Colors.gradient.primary as unknown as string[]
+          }
           start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={[styles.base, sizeStyles[size], disabled && styles.disabled]}
+          end={{ x: 1, y: 1 }}
+          style={[
+            styles.base,
+            sizeStyles[size],
+            Layout.shadow.sm,
+          ]}
         >
           {loading ? (
-            <ActivityIndicator color={Colors.textInverse} />
+            <ActivityIndicator color={Colors.textInverse} size="small" />
           ) : (
-            <>
+            <View style={styles.content}>
               {icon}
-              <Text style={[textSizes[size], { color: Colors.textInverse }]}>{title}</Text>
-            </>
+              <Text style={[textSizes[size], styles.primaryText]}>{title}</Text>
+            </View>
           )}
         </LinearGradient>
-      </TouchableOpacity>
+      </Touchable>
     );
   }
 
+  const variantStyles = {
+    secondary: {
+      bg: Colors.surface,
+      border: Colors.border.cardHover,
+      textColor: Colors.textPrimary,
+    },
+    outline: {
+      bg: 'transparent',
+      border: Colors.primary + '60',
+      textColor: Colors.primary,
+    },
+    ghost: {
+      bg: 'transparent',
+      border: 'transparent',
+      textColor: Colors.textSecondary,
+    },
+  };
+
+  const v = variantStyles[variant as keyof typeof variantStyles];
+
   return (
-    <TouchableOpacity
+    <Touchable
       onPress={onPress}
       disabled={disabled || loading}
+      // @ts-ignore
       activeOpacity={0.7}
       style={[
         styles.base,
         sizeStyles[size],
-        variant === 'outline' && styles.outline,
-        variant === 'secondary' && styles.secondary,
+        {
+          backgroundColor: v.bg,
+          borderWidth: variant === 'ghost' ? 0 : 1.5,
+          borderColor: v.border,
+        },
         disabled && styles.disabled,
-        { borderRadius: Layout.radius.md },
+        fullWidth && { width: '100%' },
         style,
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'outline' ? Colors.primary : Colors.textPrimary} />
+        <ActivityIndicator color={v.textColor} size="small" />
       ) : (
-        <>
+        <View style={styles.content}>
           {icon}
-          <Text
-            style={[
-              textSizes[size],
-              {
-                color: variant === 'outline' ? Colors.primary : Colors.textPrimary,
-              },
-            ]}
-          >
-            {title}
-          </Text>
-        </>
+          <Text style={[textSizes[size], { color: v.textColor }]}>{title}</Text>
+        </View>
       )}
-    </TouchableOpacity>
+    </Touchable>
   );
 }
 
@@ -117,17 +151,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
-  outline: {
-    borderWidth: 1.5,
-    borderColor: Colors.primary,
-    backgroundColor: 'transparent',
-  },
-  secondary: {
-    backgroundColor: Colors.backgroundElevated,
+  primaryText: {
+    color: Colors.textInverse,
+    fontWeight: '700',
   },
   disabled: {
-    opacity: 0.5,
+    opacity: 0.4,
   },
 });

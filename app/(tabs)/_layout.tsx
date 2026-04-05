@@ -1,24 +1,30 @@
 /**
  * CareLog Tab Navigation
- * Dark tab bar, teal active indicator, 4 core tabs
+ * Frosted glass tab bar, teal active state, refined icons
  */
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
+import Layout from '@/constants/Layout';
 
 function TabIcon({ name, focused }: { name: string; focused: boolean }) {
-  const icons: Record<string, string> = {
-    Dashboard: '🏠',
-    Visits: '📋',
-    Family: '👨‍👩‍👧',
-    Settings: '⚙️',
+  const icons: Record<string, { active: string; inactive: string }> = {
+    Dashboard: { active: '◉', inactive: '○' },
+    Visits: { active: '▣', inactive: '▢' },
+    Family: { active: '♥', inactive: '♡' },
+    Settings: { active: '⬢', inactive: '⬡' },
   };
+  const icon = icons[name] || { active: '●', inactive: '○' };
+
   return (
     <View style={styles.tabIcon}>
-      <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>
-        {icons[name] || '●'}
+      <Text style={[
+        styles.iconText,
+        { color: focused ? Colors.tabBar.active : Colors.tabBar.inactive },
+      ]}>
+        {focused ? icon.active : icon.inactive}
       </Text>
       {focused && <View style={styles.activeIndicator} />}
     </View>
@@ -32,18 +38,23 @@ export default function TabLayout() {
         headerShown: false,
         tabBarStyle: {
           backgroundColor: Colors.tabBar.background,
-          borderTopColor: Colors.border.card,
+          borderTopColor: Colors.border.subtle,
           borderTopWidth: 1,
-          height: 88,
-          paddingBottom: 24,
+          height: Platform.OS === 'web' ? 64 : 88,
+          paddingBottom: Platform.OS === 'web' ? 8 : 24,
           paddingTop: 8,
-        },
+          ...(Platform.OS === 'web' ? {
+            // @ts-ignore
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+          } : {}),
+        } as any,
         tabBarActiveTintColor: Colors.tabBar.active,
         tabBarInactiveTintColor: Colors.tabBar.inactive,
         tabBarLabelStyle: {
-          ...Typography.caption,
-          fontSize: 11,
-          marginTop: 4,
+          ...Typography.micro,
+          marginTop: 2,
+          letterSpacing: 0.8,
         },
       }}
     >
@@ -83,12 +94,17 @@ const styles = StyleSheet.create({
   tabIcon: {
     alignItems: 'center',
     justifyContent: 'center',
+    height: 28,
+  },
+  iconText: {
+    fontSize: 20,
+    fontWeight: '300',
   },
   activeIndicator: {
     width: 4,
     height: 4,
     borderRadius: 2,
     backgroundColor: Colors.tabBar.active,
-    marginTop: 4,
+    marginTop: 3,
   },
 });

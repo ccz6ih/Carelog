@@ -1,7 +1,7 @@
 /**
  * CareLog Login Screen
- * Clean, trust-building. Dark background, teal accent.
- * Psychological anchor: "Get Paid. Stay Compliant. Feel Seen."
+ * Responsive, centered card on web, full-bleed on mobile
+ * "Get Paid. Stay Compliant. Feel Seen."
  */
 import React, { useState } from 'react';
 import {
@@ -14,6 +14,7 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
@@ -29,22 +30,23 @@ export default function LoginScreen() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [error, setError] = useState('');
   const setUser = useAppStore((s) => s.setUser);
   const setOnboarded = useAppStore((s) => s.setOnboarded);
 
+  const showError = (msg: string) => {
+    setError(msg);
+    if (Platform.OS !== 'web') Alert.alert('Error', msg);
+  };
+
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Missing Fields', 'Please enter your email and password.');
-      return;
-    }
+    if (!email || !password) { showError('Please enter your email and password.'); return; }
+    setError('');
     setLoading(true);
-    const { data, error } = await api.auth.login(email, password);
+    const { data, error: authError } = await api.auth.login(email, password);
     setLoading(false);
 
-    if (error) {
-      Alert.alert('Sign In Failed', error.message);
-      return;
-    }
+    if (authError) { showError(authError.message); return; }
 
     if (data.user) {
       const { data: profile } = await api.auth.me();
@@ -59,7 +61,6 @@ export default function LoginScreen() {
         activeVisit: null,
       });
 
-      // Check if user has recipients (onboarded)
       const { data: recipients } = await api.recipients.list();
       if (recipients && recipients.length > 0) {
         setOnboarded(true);
@@ -71,33 +72,15 @@ export default function LoginScreen() {
   };
 
   const handleSignUp = async () => {
-    if (!isSignUp) {
-      setIsSignUp(true);
-      return;
-    }
-
-    if (!email || !password) {
-      Alert.alert('Missing Fields', 'Please enter your email and password.');
-      return;
-    }
-    if (!firstName || !lastName) {
-      Alert.alert('Missing Fields', 'Please enter your first and last name.');
-      return;
-    }
-
+    if (!isSignUp) { setIsSignUp(true); return; }
+    if (!email || !password) { showError('Please enter your email and password.'); return; }
+    if (!firstName || !lastName) { showError('Please enter your first and last name.'); return; }
+    setError('');
     setLoading(true);
-    const { data, error } = await api.auth.register({
-      email,
-      password,
-      firstName,
-      lastName,
-    });
+    const { data, error: authError } = await api.auth.register({ email, password, firstName, lastName });
     setLoading(false);
 
-    if (error) {
-      Alert.alert('Sign Up Failed', error.message);
-      return;
-    }
+    if (authError) { showError(authError.message); return; }
 
     if (data.user) {
       setUser({
@@ -114,175 +97,216 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled"
+    <View style={styles.screen}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
       >
-        {/* Brand */}
-        <View style={styles.brand}>
-          <View style={styles.logoMark}>
-            <Text style={styles.logoText}>CL</Text>
-          </View>
-          <Text style={[Typography.h1, { color: Colors.textPrimary, marginTop: 16 }]}>
-            CareLog
-          </Text>
-          <Text style={[Typography.body, { color: Colors.textSecondary, marginTop: 8, textAlign: 'center' }]}>
-            Get Paid. Stay Compliant.{'\n'}Feel Seen.
-          </Text>
-        </View>
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.card}>
+            {/* Brand */}
+            <View style={styles.brand}>
+              <LinearGradient
+                colors={Colors.gradient.primary as unknown as string[]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.logoMark}
+              >
+                <Text style={styles.logoText}>CL</Text>
+              </LinearGradient>
+              <Text style={[Typography.h1, { color: Colors.textPrimary, marginTop: 20 }]}>
+                CareLog
+              </Text>
+              <Text style={[Typography.bodySm, { color: Colors.textSecondary, marginTop: 6, textAlign: 'center', lineHeight: 20 }]}>
+                Get Paid. Stay Compliant.{'\n'}Feel Seen.
+              </Text>
+            </View>
 
-        {/* Form */}
-        <View style={styles.form}>
-          {isSignUp && (
-            <>
+            {/* Error banner */}
+            {error ? (
+              <View style={styles.errorBanner}>
+                <Text style={[Typography.bodySm, { color: Colors.error }]}>{error}</Text>
+              </View>
+            ) : null}
+
+            {/* Form */}
+            <View style={styles.form}>
+              {isSignUp && (
+                <View style={styles.nameRow}>
+                  <View style={[styles.inputContainer, { flex: 1 }]}>
+                    <Text style={styles.label}>First Name</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={firstName}
+                      onChangeText={setFirstName}
+                      placeholder="First"
+                      placeholderTextColor={Colors.textMuted}
+                      autoCapitalize="words"
+                    />
+                  </View>
+                  <View style={[styles.inputContainer, { flex: 1 }]}>
+                    <Text style={styles.label}>Last Name</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={lastName}
+                      onChangeText={setLastName}
+                      placeholder="Last"
+                      placeholderTextColor={Colors.textMuted}
+                      autoCapitalize="words"
+                    />
+                  </View>
+                </View>
+              )}
+
               <View style={styles.inputContainer}>
-                <Text style={styles.label}>First Name</Text>
+                <Text style={styles.label}>Email</Text>
                 <TextInput
                   style={styles.input}
-                  value={firstName}
-                  onChangeText={setFirstName}
-                  placeholder="First name"
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="you@example.com"
                   placeholderTextColor={Colors.textMuted}
-                  autoCapitalize="words"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
                 />
               </View>
+
               <View style={styles.inputContainer}>
-                <Text style={styles.label}>Last Name</Text>
+                <Text style={styles.label}>Password</Text>
                 <TextInput
                   style={styles.input}
-                  value={lastName}
-                  onChangeText={setLastName}
-                  placeholder="Last name"
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="••••••••"
                   placeholderTextColor={Colors.textMuted}
-                  autoCapitalize="words"
+                  secureTextEntry
                 />
               </View>
-            </>
-          )}
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="you@example.com"
-              placeholderTextColor={Colors.textMuted}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
+              <View style={styles.buttons}>
+                <Button
+                  title={isSignUp ? 'Create Account' : 'Sign In'}
+                  onPress={isSignUp ? handleSignUp : handleLogin}
+                  loading={loading}
+                  size="lg"
+                  fullWidth
+                />
+
+                <Button
+                  title={isSignUp ? 'Back to Sign In' : 'Create Account'}
+                  onPress={isSignUp ? () => setIsSignUp(false) : handleSignUp}
+                  variant="outline"
+                  size="lg"
+                  fullWidth
+                />
+              </View>
+            </View>
+
+            {/* Trust */}
+            <View style={styles.trust}>
+              <Text style={[Typography.micro, { color: Colors.textMuted, textAlign: 'center', letterSpacing: 1.5, textTransform: 'uppercase' }]}>
+                HIPAA Compliant · AES-256 Encrypted
+              </Text>
+            </View>
           </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.input}
-              value={password}
-              onChangeText={setPassword}
-              placeholder="••••••••"
-              placeholderTextColor={Colors.textMuted}
-              secureTextEntry
-            />
-          </View>
-
-          <Button
-            title="Sign In"
-            onPress={handleLogin}
-            loading={loading && !isSignUp}
-            size="lg"
-            style={{ marginTop: 8 }}
-          />
-
-          <Button
-            title={isSignUp ? 'Create Account' : 'Create Account'}
-            onPress={handleSignUp}
-            loading={loading && isSignUp}
-            variant="outline"
-            size="lg"
-            style={{ marginTop: 12 }}
-          />
-
-          {isSignUp && (
-            <Button
-              title="Back to Sign In"
-              onPress={() => setIsSignUp(false)}
-              variant="ghost"
-              style={{ marginTop: 4 }}
-            />
-          )}
-        </View>
-
-        {/* Trust signals */}
-        <View style={styles.trust}>
-          <Text style={[Typography.caption, { color: Colors.textMuted, textAlign: 'center' }]}>
-            🔒 HIPAA Compliant · AES-256 Encrypted
-          </Text>
-          <Text style={[Typography.caption, { color: Colors.textMuted, textAlign: 'center', marginTop: 4 }]}>
-            Your data never leaves your control
-          </Text>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  keyboardView: {
+    flex: 1,
   },
   scroll: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: Layout.spacing.xl,
+    alignItems: 'center',
+    padding: Layout.spacing.lg,
+    ...(Platform.OS === 'web' ? { minHeight: '100vh' } : {}) as any,
+  },
+  card: {
+    width: '100%',
+    maxWidth: Layout.content.maxWidth,
+    ...(Platform.OS === 'web' ? {
+      backgroundColor: Colors.backgroundCard,
+      borderRadius: Layout.radius.xl,
+      borderWidth: 1,
+      borderColor: Colors.border.card,
+      padding: 40,
+    } : {
+      padding: Layout.spacing.md,
+    }) as any,
   },
   brand: {
     alignItems: 'center',
-    marginBottom: Layout.spacing.xxl,
+    marginBottom: 36,
   },
   logoMark: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
-    backgroundColor: Colors.primary,
+    width: 56,
+    height: 56,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   logoText: {
-    ...Typography.h2,
-    color: Colors.textInverse,
+    fontSize: 22,
     fontWeight: '800',
+    color: Colors.textInverse,
+    letterSpacing: -0.5,
+  },
+  errorBanner: {
+    backgroundColor: Colors.error + '15',
+    borderRadius: Layout.radius.sm,
+    padding: Layout.spacing.md,
+    marginBottom: Layout.spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.error + '30',
   },
   form: {
+    gap: Layout.spacing.md,
+  },
+  nameRow: {
+    flexDirection: 'row',
     gap: Layout.spacing.md,
   },
   inputContainer: {
     gap: 6,
   },
   label: {
-    ...Typography.caption,
-    color: Colors.textSecondary,
+    ...Typography.micro,
+    color: Colors.textTertiary,
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 1.5,
   },
   input: {
     backgroundColor: Colors.surface,
     borderRadius: Layout.radius.md,
     padding: Layout.spacing.md,
+    paddingVertical: 14,
     color: Colors.textPrimary,
-    fontSize: 16,
+    fontSize: 15,
     borderWidth: 1,
     borderColor: Colors.border.card,
   },
+  buttons: {
+    gap: Layout.spacing.sm,
+    marginTop: Layout.spacing.sm,
+  },
   trust: {
-    marginTop: Layout.spacing.xxl,
+    marginTop: 28,
     paddingTop: Layout.spacing.lg,
     borderTopWidth: 1,
-    borderTopColor: Colors.border.card,
+    borderTopColor: Colors.border.subtle,
   },
 });

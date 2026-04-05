@@ -1,7 +1,7 @@
 /**
  * CareLog Design System — Colors
- * Extracted from pitch deck visual language
- * Dark-first, medical-grade trust, warm family accent
+ * 2026 — Dark-first, glassmorphic, medical-grade trust
+ * Refined palette with luminous accents
  */
 
 // Core palette
@@ -27,62 +27,74 @@ const navy = {
   500: '#3A6790',
   600: '#2D5478',
   700: '#1E3A54',
-  800: '#142842', // Card backgrounds
-  900: '#0B1622', // App background — the deep dark
-  950: '#070E17', // True black areas
+  800: '#142842',
+  850: '#101F33', // New: card surfaces
+  900: '#0B1622', // App background
+  950: '#070E17', // Deepest
 };
 
 const orange = {
   400: '#FFB347',
-  500: '#FF9F1C', // Secondary — warnings, tier highlights
+  500: '#FF9F1C',
   600: '#E88B00',
 };
 
 const purple = {
   400: '#B794F6',
-  500: '#9B72E8', // Tertiary — Pro tier, special features
+  500: '#9B72E8',
   600: '#7C4DDB',
 };
 
 const pink = {
   400: '#FF6B8A',
-  500: '#FF4069', // Accent — urgent, Family tier, alerts
+  500: '#FF4069',
   600: '#E02050',
 };
 
 const green = {
   400: '#6BCB77',
-  500: '#4CAF50', // Confirmed, success states
+  500: '#4CAF50',
   600: '#388E3C',
 };
 
 const red = {
   400: '#FF6B6B',
-  500: '#EF4444', // Errors, denied claims
+  500: '#EF4444',
   600: '#DC2626',
 };
 
-// Semantic color tokens — what things MEAN, not what they ARE
+// Semantic color tokens
 export const Colors = {
-  // Backgrounds
+  // Backgrounds (layered depth system)
   background: navy[900],
-  backgroundElevated: navy[800],
-  backgroundCard: navy[800],
-  backgroundModal: navy[700],
+  backgroundElevated: navy[850],
+  backgroundCard: navy[850],
+  backgroundModal: navy[800],
   surface: '#162231',
+  surfaceHover: '#1A2A3D',
 
-  // Text
-  textPrimary: '#FFFFFF',
+  // Glass effect backgrounds
+  glass: {
+    background: 'rgba(20, 40, 66, 0.65)',
+    backgroundLight: 'rgba(20, 40, 66, 0.4)',
+    border: 'rgba(139, 163, 190, 0.12)',
+    borderLight: 'rgba(139, 163, 190, 0.08)',
+  },
+
+  // Text (refined contrast levels)
+  textPrimary: '#F0F4F8',
   textSecondary: '#8BA3BE',
-  textMuted: '#5A7A9A',
+  textTertiary: '#6B8AAA',
+  textMuted: '#4A6A8A',
   textInverse: navy[900],
 
   // Brand
   primary: teal[500],
   primaryLight: teal[300],
   primaryDark: teal[700],
+  primaryGlow: teal[500] + '30',
 
-  // Accents (matching pitch deck border colors)
+  // Accents
   accent: {
     orange: orange[500],
     purple: purple[500],
@@ -93,11 +105,14 @@ export const Colors = {
 
   // Semantic
   success: green[500],
+  successLight: green[400],
   warning: orange[500],
+  warningLight: orange[400],
   error: red[500],
+  errorLight: red[400],
   info: teal[400],
 
-  // Tier-specific (from pitch deck pricing cards)
+  // Tier-specific
   tier: {
     basic: teal[500],
     pro: green[500],
@@ -113,25 +128,38 @@ export const Colors = {
     pending: orange[500],
   },
 
-  // Gradient pairs for CTAs
+  // Gradients
   gradient: {
-    primary: [teal[500], teal[400]],
-    warm: [orange[500], orange[400]],
-    premium: [purple[500], purple[400]],
+    primary: [teal[500], teal[300]] as const,
+    primarySubtle: [teal[500] + '20', teal[300] + '05'] as const,
+    warm: [orange[500], orange[400]] as const,
+    premium: [purple[500], purple[400]] as const,
+    surface: [navy[850], navy[900]] as const,
+    glow: [teal[500] + '40', teal[500] + '00'] as const,
   },
 
-  // Border colors from pitch deck card styles
+  // Border colors
   border: {
-    default: 'rgba(0, 212, 170, 0.15)',
+    default: 'rgba(0, 212, 170, 0.12)',
     active: teal[500],
-    card: 'rgba(139, 163, 190, 0.12)',
+    card: 'rgba(139, 163, 190, 0.08)',
+    cardHover: 'rgba(139, 163, 190, 0.15)',
+    subtle: 'rgba(139, 163, 190, 0.05)',
   },
 
   // Tab bar
   tabBar: {
-    background: navy[950],
+    background: navy[950] + 'F0',
     active: teal[500],
     inactive: navy[400],
+    indicator: teal[500],
+  },
+
+  // Overlays
+  overlay: {
+    light: 'rgba(11, 22, 34, 0.5)',
+    medium: 'rgba(11, 22, 34, 0.7)',
+    heavy: 'rgba(7, 14, 23, 0.85)',
   },
 } as const;
 

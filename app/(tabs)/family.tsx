@@ -1,7 +1,6 @@
 /**
  * CareLog Family Portal
- * The retention moat. Family members see visit activity.
- * "Send Appreciation" — the subscription offsetter.
+ * Activity feed + appreciation. Responsive centered layout.
  */
 import React, { useState, useEffect } from 'react';
 import {
@@ -13,6 +12,7 @@ import {
   TouchableOpacity,
   Modal,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
@@ -31,10 +31,17 @@ interface ActivityItem {
 }
 
 const ACTIVITY_ICONS: Record<string, string> = {
-  visit_started: '🔔',
-  visit_completed: '✅',
-  task_logged: '📋',
-  photo_shared: '📸',
+  visit_started: '◉',
+  visit_completed: '✓',
+  task_logged: '▣',
+  photo_shared: '◫',
+};
+
+const ACTIVITY_COLORS: Record<string, string> = {
+  visit_started: Colors.primary,
+  visit_completed: Colors.success,
+  task_logged: Colors.accent.orange,
+  photo_shared: Colors.accent.purple,
 };
 
 const APPRECIATION_AMOUNTS = [10, 25, 50];
@@ -50,7 +57,6 @@ export default function FamilyScreen() {
 
   useEffect(() => {
     async function loadActivity() {
-      // Get first recipient to load their activity
       const { data: recipients } = await supabase
         .from('recipients')
         .select('id, first_name, relationship')
@@ -69,7 +75,6 @@ export default function FamilyScreen() {
           .eq('recipient_id', r.id)
           .order('created_at', { ascending: false })
           .limit(20);
-
         if (activityData) setActivities(activityData);
       }
       setLoading(false);
@@ -78,8 +83,7 @@ export default function FamilyScreen() {
   }, [user?.id]);
 
   const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    return new Date(timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   };
 
   const handleSendAppreciation = () => {
@@ -93,135 +97,143 @@ export default function FamilyScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <Text style={[Typography.sectionLabel, { color: Colors.accent.orange }]}>
-          FAMILY PORTAL
-        </Text>
-        <Text style={[Typography.h1, { color: Colors.textPrimary, marginTop: 4 }]}>
-          {recipientName || "Family"} Care Feed
-        </Text>
-        <Text style={[Typography.bodySm, { color: Colors.textSecondary, marginTop: 4, marginBottom: 24 }]}>
-          Real-time updates from visits
-        </Text>
-
-        {/* Activity Feed */}
-        {loading ? (
-          <ActivityIndicator color={Colors.primary} size="large" style={{ marginTop: 40 }} />
-        ) : activities.length === 0 ? (
-          <View style={styles.empty}>
-            <Text style={{ fontSize: 48 }}>👨‍👩‍👧</Text>
-            <Text style={[Typography.h3, { color: Colors.textSecondary, marginTop: 16 }]}>
-              No activity yet
-            </Text>
-            <Text style={[Typography.bodySm, { color: Colors.textMuted, marginTop: 8, textAlign: 'center' }]}>
-              Activity will appear here once visits are completed.
-            </Text>
-          </View>
-        ) : (
-          activities.map((activity) => (
-            <Card
-              key={activity.id}
-              borderColor={activity.activity_type === 'visit_completed' ? Colors.success : Colors.border.default}
-              style={{ marginBottom: 12 }}
-            >
-              <View style={styles.activityRow}>
-                <Text style={{ fontSize: 20 }}>
-                  {ACTIVITY_ICONS[activity.activity_type] || '📌'}
-                </Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={[Typography.body, { color: Colors.textPrimary }]}>
-                    {activity.summary}
-                  </Text>
-                  <Text style={[Typography.caption, { color: Colors.textMuted, marginTop: 2 }]}>
-                    {formatTime(activity.created_at)}
-                  </Text>
-                </View>
-              </View>
-            </Card>
-          ))
-        )}
-
-        {/* Send Appreciation CTA */}
-        <Card borderColor={Colors.accent.orange} style={{ marginTop: 16 }}>
-          <Text style={[Typography.h3, { color: Colors.accent.orange }]}>
-            🙏 Send Appreciation
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <View style={styles.content}>
+          <Text style={[Typography.sectionLabel, { color: Colors.accent.orange }]}>FAMILY PORTAL</Text>
+          <Text style={[Typography.h1, { color: Colors.textPrimary, marginTop: 4 }]}>
+            {recipientName || 'Family'} Care Feed
           </Text>
-          <Text style={[Typography.bodySm, { color: Colors.textSecondary, marginTop: 8 }]}>
-            Show your caregiver you see their work. One appreciation covers half the subscription.
+          <Text style={[Typography.bodySm, { color: Colors.textSecondary, marginTop: 4, marginBottom: 24 }]}>
+            Real-time updates from visits
           </Text>
-          <Button
-            title="Send Appreciation"
-            onPress={() => setShowAppreciation(true)}
-            variant="primary"
-            style={{ marginTop: 16 }}
-          />
-        </Card>
 
-        {/* Appreciation Modal */}
-        <Modal visible={showAppreciation} transparent animationType="slide">
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              {sent ? (
-                <View style={{ alignItems: 'center', padding: 40 }}>
-                  <Text style={{ fontSize: 48 }}>💚</Text>
-                  <Text style={[Typography.h2, { color: Colors.textPrimary, marginTop: 16 }]}>
-                    Appreciation Sent!
-                  </Text>
-                  <Text style={[Typography.body, { color: Colors.textSecondary, marginTop: 8, textAlign: 'center' }]}>
-                    Your caregiver will be notified. Thank you for seeing their work.
-                  </Text>
-                </View>
-              ) : (
-                <>
-                  <Text style={[Typography.h2, { color: Colors.textPrimary }]}>
-                    Send Appreciation
-                  </Text>
-
-                  <View style={styles.amountRow}>
-                    {APPRECIATION_AMOUNTS.map((amount) => (
-                      <TouchableOpacity
-                        key={amount}
-                        onPress={() => setSelectedAmount(amount)}
-                        style={[
-                          styles.amountBtn,
-                          selectedAmount === amount && styles.amountBtnActive,
-                        ]}
-                      >
-                        <Text style={[
-                          Typography.h3,
-                          { color: selectedAmount === amount ? Colors.textInverse : Colors.textPrimary },
-                        ]}>
-                          ${amount}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-
-                  <Text style={[Typography.caption, { color: Colors.textMuted, textAlign: 'center', marginTop: 12 }]}>
-                    Routes to Venmo · Zelle · PayPal · Cash App
-                  </Text>
-                  <Text style={[Typography.caption, { color: Colors.textMuted, textAlign: 'center', marginTop: 2 }]}>
-                    No money through CareLog
-                  </Text>
-
-                  <Button
-                    title={selectedAmount ? `Send $${selectedAmount}` : 'Select Amount'}
-                    onPress={handleSendAppreciation}
-                    disabled={!selectedAmount}
-                    size="lg"
-                    style={{ marginTop: 24 }}
-                  />
-                  <Button
-                    title="Cancel"
-                    onPress={() => setShowAppreciation(false)}
-                    variant="ghost"
-                    style={{ marginTop: 8 }}
-                  />
-                </>
-              )}
+          {loading ? (
+            <View style={styles.loadingState}>
+              <ActivityIndicator color={Colors.primary} size="large" />
             </View>
-          </View>
-        </Modal>
+          ) : activities.length === 0 ? (
+            <View style={styles.emptyState}>
+              <View style={styles.emptyIcon}>
+                <Text style={{ fontSize: 28, opacity: 0.6 }}>♡</Text>
+              </View>
+              <Text style={[Typography.h3, { color: Colors.textSecondary, marginTop: 20 }]}>
+                No activity yet
+              </Text>
+              <Text style={[Typography.bodySm, { color: Colors.textMuted, marginTop: 8, textAlign: 'center' }]}>
+                Activity will appear here once visits are completed.
+              </Text>
+            </View>
+          ) : (
+            activities.map((activity) => (
+              <Card key={activity.id} variant="glass" style={{ marginBottom: 10 }}>
+                <View style={styles.activityRow}>
+                  <View style={[
+                    styles.activityIcon,
+                    { backgroundColor: (ACTIVITY_COLORS[activity.activity_type] || Colors.primary) + '15' },
+                  ]}>
+                    <Text style={{
+                      color: ACTIVITY_COLORS[activity.activity_type] || Colors.primary,
+                      fontSize: 14,
+                      fontWeight: '700',
+                    }}>
+                      {ACTIVITY_ICONS[activity.activity_type] || '●'}
+                    </Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[Typography.body, { color: Colors.textPrimary }]}>
+                      {activity.summary}
+                    </Text>
+                    <Text style={[Typography.micro, { color: Colors.textMuted, marginTop: 4, letterSpacing: 0.5 }]}>
+                      {formatTime(activity.created_at)}
+                    </Text>
+                  </View>
+                </View>
+              </Card>
+            ))
+          )}
+
+          {/* Appreciation CTA */}
+          <Card borderColor={Colors.accent.orange} style={{ marginTop: 20 }}>
+            <Text style={[Typography.h3, { color: Colors.accent.orange }]}>Send Appreciation</Text>
+            <Text style={[Typography.bodySm, { color: Colors.textSecondary, marginTop: 8 }]}>
+              Show your caregiver you see their work. One appreciation covers half the subscription.
+            </Text>
+            <Button
+              title="Send Appreciation"
+              onPress={() => setShowAppreciation(true)}
+              variant="primary"
+              style={{ marginTop: 16 }}
+            />
+          </Card>
+
+          {/* Appreciation Modal */}
+          <Modal visible={showAppreciation} transparent animationType="slide">
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <View style={styles.modalHandle} />
+                {sent ? (
+                  <View style={{ alignItems: 'center', padding: 40 }}>
+                    <View style={[styles.successIcon]}>
+                      <Text style={{ fontSize: 28, color: Colors.success }}>✓</Text>
+                    </View>
+                    <Text style={[Typography.h2, { color: Colors.textPrimary, marginTop: 20 }]}>
+                      Appreciation Sent!
+                    </Text>
+                    <Text style={[Typography.bodySm, { color: Colors.textSecondary, marginTop: 8, textAlign: 'center' }]}>
+                      Your caregiver will be notified.
+                    </Text>
+                  </View>
+                ) : (
+                  <>
+                    <Text style={[Typography.h2, { color: Colors.textPrimary, marginTop: 8 }]}>
+                      Send Appreciation
+                    </Text>
+
+                    <View style={styles.amountRow}>
+                      {APPRECIATION_AMOUNTS.map((amount) => (
+                        <TouchableOpacity
+                          key={amount}
+                          onPress={() => setSelectedAmount(amount)}
+                          style={[
+                            styles.amountBtn,
+                            selectedAmount === amount && styles.amountBtnActive,
+                          ]}
+                        >
+                          <Text style={[
+                            Typography.h2,
+                            { color: selectedAmount === amount ? Colors.textInverse : Colors.textPrimary },
+                          ]}>
+                            ${amount}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+
+                    <Text style={[Typography.micro, { color: Colors.textMuted, textAlign: 'center', marginTop: 16, letterSpacing: 1, textTransform: 'uppercase' }]}>
+                      Routes to Venmo · Zelle · PayPal · Cash App
+                    </Text>
+
+                    <View style={{ gap: 8, marginTop: 24 }}>
+                      <Button
+                        title={selectedAmount ? `Send $${selectedAmount}` : 'Select Amount'}
+                        onPress={handleSendAppreciation}
+                        disabled={!selectedAmount}
+                        size="lg"
+                        fullWidth
+                      />
+                      <Button
+                        title="Cancel"
+                        onPress={() => setShowAppreciation(false)}
+                        variant="ghost"
+                        fullWidth
+                      />
+                    </View>
+                  </>
+                )}
+              </View>
+            </View>
+          </Modal>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -233,43 +245,90 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   scroll: {
-    padding: Layout.spacing.xl,
-    paddingTop: 16,
+    alignItems: 'center',
+    paddingBottom: 32,
   },
-  empty: {
+  content: {
+    width: '100%',
+    maxWidth: Layout.content.maxWidth,
+    padding: Layout.spacing.lg,
+    paddingTop: Platform.OS === 'web' ? 24 : 16,
+  },
+  loadingState: {
+    paddingTop: 60,
+    alignItems: 'center',
+  },
+  emptyState: {
     alignItems: 'center',
     marginTop: 60,
     paddingHorizontal: 32,
   },
+  emptyIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   activityRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
+    alignItems: 'center',
+    gap: 14,
+  },
+  activityIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: Colors.overlay.heavy,
     justifyContent: 'flex-end',
   },
   modalContent: {
     backgroundColor: Colors.backgroundElevated,
-    borderTopLeftRadius: Layout.radius.xl,
-    borderTopRightRadius: Layout.radius.xl,
+    borderTopLeftRadius: Layout.radius.xxl,
+    borderTopRightRadius: Layout.radius.xxl,
     padding: Layout.spacing.xl,
     paddingBottom: 48,
+    borderWidth: 1,
+    borderColor: Colors.border.card,
+    maxWidth: Layout.content.maxWidth,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  modalHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.textMuted,
+    alignSelf: 'center',
+    marginBottom: 16,
+    opacity: 0.4,
+  },
+  successIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: Colors.success + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   amountRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 16,
-    marginTop: 24,
+    gap: 14,
+    marginTop: 28,
   },
   amountBtn: {
-    width: 80,
-    height: 80,
+    width: 88,
+    height: 88,
     borderRadius: Layout.radius.lg,
-    borderWidth: 2,
-    borderColor: Colors.border.card,
+    borderWidth: 1.5,
+    borderColor: Colors.border.cardHover,
     backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',

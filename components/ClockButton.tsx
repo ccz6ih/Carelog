@@ -1,7 +1,6 @@
 /**
  * ClockButton — CareLog's hero interaction
- * Large pulsing circle. Tap to clock in. Tap again to clock out + auto-submit.
- * The entire EVV compliance flow in one gesture.
+ * Concentric rings with breathing glow. One tap for full EVV compliance.
  */
 import React, { useEffect, useRef } from 'react';
 import {
@@ -11,7 +10,9 @@ import {
   StyleSheet,
   Animated,
   Easing,
+  Platform,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
@@ -31,80 +32,122 @@ export default function ClockButton({
   onPress,
 }: ClockButtonProps) {
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const glowAnim = useRef(new Animated.Value(0.3)).current;
+  const glowAnim = useRef(new Animated.Value(0)).current;
+  const ringRotation = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (isClockedIn) {
-      // Gentle pulse when clocked in — breathing effect
+      // Breathing pulse
       const pulse = Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
-            toValue: 1.05,
-            duration: 1500,
-            easing: Easing.inOut(Easing.ease),
+            toValue: 1.04,
+            duration: 2000,
+            easing: Easing.inOut(Easing.sin),
             useNativeDriver: true,
           }),
           Animated.timing(pulseAnim, {
             toValue: 1,
-            duration: 1500,
-            easing: Easing.inOut(Easing.ease),
+            duration: 2000,
+            easing: Easing.inOut(Easing.sin),
             useNativeDriver: true,
           }),
         ])
       );
       pulse.start();
 
-      // Glow ring animation
+      // Glow intensity
       const glow = Animated.loop(
         Animated.sequence([
           Animated.timing(glowAnim, {
-            toValue: 0.8,
-            duration: 1500,
+            toValue: 1,
+            duration: 2000,
+            easing: Easing.inOut(Easing.sin),
             useNativeDriver: true,
           }),
           Animated.timing(glowAnim, {
             toValue: 0.3,
-            duration: 1500,
+            duration: 2000,
+            easing: Easing.inOut(Easing.sin),
             useNativeDriver: true,
           }),
         ])
       );
       glow.start();
 
+      // Slow ring rotation
+      const rotate = Animated.loop(
+        Animated.timing(ringRotation, {
+          toValue: 1,
+          duration: 20000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        })
+      );
+      rotate.start();
+
       return () => {
         pulse.stop();
         glow.stop();
+        rotate.stop();
       };
     } else {
       pulseAnim.setValue(1);
-      glowAnim.setValue(0.3);
+      glowAnim.setValue(0);
+      ringRotation.setValue(0);
     }
   }, [isClockedIn]);
 
   const handlePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    }
     onPress();
   };
 
   const SIZE = Layout.clockButton.size;
+  const OUTER_RING = SIZE + 48;
+  const MIDDLE_RING = SIZE + 24;
+
+  const spin = ringRotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
 
   return (
     <View style={styles.container}>
-      {/* Outer glow ring */}
+      {/* Outermost glow ring */}
       {isClockedIn && (
         <Animated.View
           style={[
-            styles.glowRing,
+            styles.outerGlow,
             {
-              width: SIZE + 40,
-              height: SIZE + 40,
-              borderRadius: (SIZE + 40) / 2,
+              width: OUTER_RING,
+              height: OUTER_RING,
+              borderRadius: OUTER_RING / 2,
               opacity: glowAnim,
+              transform: [{ rotate: spin }],
             },
           ]}
         />
       )}
 
+      {/* Middle ring */}
+      <Animated.View
+        style={[
+          styles.middleRing,
+          {
+            width: MIDDLE_RING,
+            height: MIDDLE_RING,
+            borderRadius: MIDDLE_RING / 2,
+            borderColor: isClockedIn
+              ? Colors.primary + '30'
+              : Colors.primary + '10',
+          },
+        ]}
+      />
+
+      {/* Main button */}
       <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
         <TouchableOpacity
           onPress={handlePress}
@@ -115,26 +158,46 @@ export default function ClockButton({
               width: SIZE,
               height: SIZE,
               borderRadius: SIZE / 2,
-              borderColor: isClockedIn ? Colors.evv.clockedIn : Colors.primary,
-              backgroundColor: isClockedIn
-                ? Colors.evv.clockedIn + '15'
-                : Colors.primary + '10',
             },
+            isClockedIn && Layout.shadow.glow(Colors.primary),
           ]}
         >
-          {isClockedIn ? (
-            <>
-              <Text style={styles.timerText}>{elapsedTime}</Text>
-              <Text style={styles.statusText}>Visiting {recipientName}</Text>
-              <Text style={styles.actionHint}>Tap to Clock Out</Text>
-            </>
-          ) : (
-            <>
-              <Text style={styles.clockInIcon}>▶</Text>
-              <Text style={styles.clockInText}>Clock In</Text>
-              <Text style={styles.subText}>GPS + EVV capture</Text>
-            </>
-          )}
+          <LinearGradient
+            colors={
+              isClockedIn
+                ? [Colors.primary + '20', Colors.primary + '08']
+                : [Colors.surface, Colors.backgroundCard]
+            }
+            style={[
+              styles.buttonInner,
+              {
+                width: SIZE,
+                height: SIZE,
+                borderRadius: SIZE / 2,
+                borderWidth: 2,
+                borderColor: isClockedIn ? Colors.primary + '80' : Colors.primary + '25',
+              },
+            ]}
+          >
+            {isClockedIn ? (
+              <>
+                <Text style={styles.timerText}>{elapsedTime}</Text>
+                <View style={styles.statusRow}>
+                  <View style={styles.liveDot} />
+                  <Text style={styles.statusText}>{recipientName}</Text>
+                </View>
+                <Text style={styles.actionHint}>Tap to Clock Out</Text>
+              </>
+            ) : (
+              <>
+                <View style={styles.playIcon}>
+                  <View style={styles.playTriangle} />
+                </View>
+                <Text style={styles.clockInText}>Clock In</Text>
+                <Text style={styles.subText}>GPS + EVV auto-capture</Text>
+              </>
+            )}
+          </LinearGradient>
         </TouchableOpacity>
       </Animated.View>
     </View>
@@ -145,42 +208,80 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 20,
+    paddingVertical: 32,
   },
-  glowRing: {
+  outerGlow: {
     position: 'absolute',
-    borderWidth: 2,
-    borderColor: Colors.evv.clockedIn,
+    borderWidth: 1,
+    borderColor: Colors.primary + '25',
+    borderStyle: 'dashed',
+  },
+  middleRing: {
+    position: 'absolute',
+    borderWidth: 1,
   },
   button: {
-    borderWidth: Layout.clockButton.borderWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonInner: {
     alignItems: 'center',
     justifyContent: 'center',
   },
   timerText: {
-    ...Typography.heroStat,
-    color: Colors.evv.clockedIn,
-    fontSize: 36,
+    ...Typography.display,
+    color: Colors.primary,
+    fontSize: 34,
+    letterSpacing: 2,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 6,
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.primary,
   },
   statusText: {
-    ...Typography.bodySm,
+    ...Typography.caption,
     color: Colors.textSecondary,
-    marginTop: 4,
   },
   actionHint: {
-    ...Typography.caption,
-    color: Colors.evv.clockedIn,
-    marginTop: 8,
-    opacity: 0.8,
-  },
-  clockInIcon: {
-    fontSize: 36,
+    ...Typography.micro,
     color: Colors.primary,
-    marginBottom: 8,
+    marginTop: 10,
+    opacity: 0.7,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+  },
+  playIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.primary + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  playTriangle: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 14,
+    borderTopWidth: 9,
+    borderBottomWidth: 9,
+    borderLeftColor: Colors.primary,
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    marginLeft: 3,
   },
   clockInText: {
     ...Typography.h2,
     color: Colors.primary,
+    fontWeight: '700',
   },
   subText: {
     ...Typography.caption,
