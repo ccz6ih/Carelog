@@ -21,11 +21,13 @@ import Layout from '@/constants/Layout';
 import Card from '@/components/ui/Card';
 import { IconComfort } from '@/components/icons/CareIcons';
 import { useAppStore } from '@/store/useAppStore';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/services/supabase';
 import { api } from '@/services';
 
 export default function EarningsScreen() {
   const user = useAppStore((s) => s.user);
+  const { userId, ready } = useAuth();
   const [loading, setLoading] = useState(true);
   const [monthlyVisits, setMonthlyVisits] = useState(0);
   const [monthlyHours, setMonthlyHours] = useState(0);
@@ -45,7 +47,7 @@ export default function EarningsScreen() {
         const { data: mVisits } = await supabase
           .from('visits')
           .select('clock_in_time, clock_out_time')
-          .eq('caregiver_id', user!.id)
+          .eq('caregiver_id', userId!)
           .gte('created_at', startOfMonth.toISOString())
           .not('clock_out_time', 'is', null);
 
@@ -61,7 +63,7 @@ export default function EarningsScreen() {
         const { data: allVisits } = await supabase
           .from('visits')
           .select('clock_in_time, clock_out_time')
-          .eq('caregiver_id', user!.id)
+          .eq('caregiver_id', userId!)
           .not('clock_out_time', 'is', null);
 
         if (allVisits) {
@@ -73,7 +75,7 @@ export default function EarningsScreen() {
           setTotalHours(Math.round(mins / 60 * 10) / 10);
         }
 
-        const { data: appreciationData } = await api.appreciation.getHistory(user!.id);
+        const { data: appreciationData } = await api.appreciation.getHistory(userId!);
         if (appreciationData) {
           setAppreciationTotal(appreciationData.total);
           setAppreciationThisMonth(appreciationData.thisMonth);
@@ -82,7 +84,7 @@ export default function EarningsScreen() {
         const { data: recent } = await supabase
           .from('visits')
           .select('id, clock_in_time, clock_out_time, recipients(first_name, relationship)')
-          .eq('caregiver_id', user!.id)
+          .eq('caregiver_id', userId!)
           .not('clock_out_time', 'is', null)
           .order('created_at', { ascending: false })
           .limit(10);
@@ -92,8 +94,9 @@ export default function EarningsScreen() {
       }
       setLoading(false);
     }
-    if (user?.id) load();
-  }, [user?.id]);
+    if (ready && userId) load();
+    else if (ready && !userId) setLoading(false);
+  }, [ready, userId]);
 
   const formatDuration = (clockIn: string, clockOut: string) => {
     const ms = new Date(clockOut).getTime() - new Date(clockIn).getTime();

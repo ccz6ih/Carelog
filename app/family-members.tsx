@@ -25,6 +25,7 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import { IconGroup, IconHeart } from '@/components/icons/CareIcons';
 import { useAppStore } from '@/store/useAppStore';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/services/supabase';
 
 interface FamilyRow {
@@ -38,6 +39,7 @@ interface FamilyRow {
 
 export default function FamilyMembersScreen() {
   const user = useAppStore((s) => s.user);
+  const { userId, ready } = useAuth();
   const [members, setMembers] = useState<FamilyRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showInvite, setShowInvite] = useState(false);
@@ -51,15 +53,16 @@ export default function FamilyMembersScreen() {
   const [recipientOptions, setRecipientOptions] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
-    if (user?.id) loadData();
-  }, [user?.id]);
+    if (ready && userId) loadData();
+    else if (ready && !userId) setLoading(false);
+  }, [ready, userId]);
 
   async function loadData() {
     try {
       const { data: recs } = await supabase
         .from('recipients')
         .select('id, first_name')
-        .eq('caregiver_id', user!.id);
+        .eq('caregiver_id', userId!);
       if (recs) {
         setRecipientOptions(recs.map((r) => ({ id: r.id, name: r.first_name })));
         if (recs.length > 0 && !selectedRecipientId) setSelectedRecipientId(recs[0].id);
@@ -68,7 +71,7 @@ export default function FamilyMembersScreen() {
       const { data: fam } = await supabase
         .from('family_members')
         .select('id, name, email, relationship, invite_accepted, recipients(first_name)')
-        .eq('invited_by', user!.id);
+        .eq('invited_by', userId!);
       if (fam) setMembers(fam as FamilyRow[]);
     } catch (e) {
       console.error('[FamilyMembers]', e);
@@ -83,7 +86,7 @@ export default function FamilyMembersScreen() {
       return;
     }
 
-    if (!user?.id || !selectedRecipientId) {
+    if (!userId || !selectedRecipientId) {
       alert('Missing account or recipient information. Please try again.');
       setSending(false);
       return;
@@ -95,7 +98,7 @@ export default function FamilyMembersScreen() {
       email: inviteEmail.toLowerCase().trim(),
       relationship: inviteRelationship || 'Family',
       recipient_id: selectedRecipientId,
-      invited_by: user.id,
+      invited_by: userId!,
     };
     console.log('[FamilyMembers] Inviting:', insertData);
     const { data: insertResult, error } = await supabase.from('family_members').insert(insertData).select();

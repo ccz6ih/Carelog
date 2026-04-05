@@ -14,6 +14,8 @@ import {
   ActivityIndicator,
   Platform,
   Linking,
+  RefreshControl,
+  Alert,
 } from 'react-native';
 import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
@@ -51,13 +53,48 @@ export default function FamilyScreen() {
   const user = useAppStore((s) => s.user);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [recipientName, setRecipientName] = useState('');
   const [showAppreciation, setShowAppreciation] = useState(false);
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [sent, setSent] = useState(false);
 
+  const loadActivity = async (isRefreshing = false) => {
+    if (!isRefreshing) setLoading(true);
+    
+    const { data: recipients } = await supabase
+      .from('recipients')
+      .select('id, first_name, relationship')
+      .eq('caregiver_id', user?.id)
+      .eq('is_active', true)
+      .limit(1);
+
+    if (recipients && recipients.length > 0) {
+      const r = recipients[0];
+      const rel = r.relationship ? r.relationship.charAt(0).toUpperCase() + r.relationship.slice(1) : '';
+      setRecipientName(rel ? `${rel}'s` : `${r.first_name}'s`);
+
+      const { data: activityData } = await supabase
+        .from('family_activity')
+        .select('*')
+        .eq('recipient_id', r.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (activityData) setActivities(activityData);
+    }
+    
+    setLoading(false);
+    if (isRefreshing) setRefreshing(false);
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadActivity(true);
+  };
+
   useEffect(() => {
-    async function loadActivity() {
+    async function init() {
+      // Load recipients and their activity
       const { data: recipients } = await supabase
         .from('recipients')
         .select('id, first_name, relationship')
@@ -70,18 +107,10 @@ export default function FamilyScreen() {
         const rel = r.relationship ? r.relationship.charAt(0).toUpperCase() + r.relationship.slice(1) : '';
         setRecipientName(rel ? `${rel}'s` : `${r.first_name}'s`);
 
-        const { data: activityData } = await supabase
-          .from('family_activity')
-          .select('*')
-          .eq('recipient_id', r.id)
-          .order('created_at', { ascending: false })
-          .limit(20);
-        if (activityData) setActivities(activityData);
-      }
-      setLoading(false);
+        // Load initial activity
+        await loadActivity();
 
-      // Subscribe to realtime inserts for live feed
-      if (recipients && recipients.length > 0) {
+        // Subscribe to realtime inserts for live feed
         const channel = supabase
           .channel('family-activity')
           .on(
@@ -90,7 +119,7 @@ export default function FamilyScreen() {
               event: 'INSERT',
               schema: 'public',
               table: 'family_activity',
-              filter: `recipient_id=eq.${recipients[0].id}`,
+              filter: `recipient_id=eq.${r.id}`,
             },
             (payload) => {
               setActivities((prev) => [payload.new as ActivityItem, ...prev]);
@@ -99,9 +128,11 @@ export default function FamilyScreen() {
           .subscribe();
 
         return () => { supabase.removeChannel(channel); };
+      } else {
+        setLoading(false);
       }
     }
-    if (user?.id) loadActivity();
+    if (user?.id) init();
   }, [user?.id]);
 
   const formatTime = (timestamp: string) => {
@@ -111,10 +142,30 @@ export default function FamilyScreen() {
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
 
   const PAYMENT_OPTIONS = [
-    { id: 'venmo', label: 'Venmo', urlScheme: (amount: number) => `venmo://paycharge?txn=pay&amount=${amount}&note=CareLog%20Appreciation` },
-    { id: 'cashapp', label: 'Cash App', urlScheme: (amount: number) => `cashapp://cash.app/pay?amount=${amount}&note=CareLog` },
-    { id: 'zelle', label: 'Zelle', urlScheme: () => `zelle://` },
-    { id: 'paypal', label: 'PayPal', urlScheme: (amount: number) => `paypal://paypalme/?amount=${amount}` },
+    {
+      id: 'venmo',
+      label: 'Venmo',
+      appScheme: (amount: number) => `venmo://paycharge?txn=pay&amount=${amount}&note=CareLog%20Appreciation`,
+      webFallback: (amount: number) => `https://venmo.com/?txn=pay&amount=${amount}&note=CareLog`,
+    },
+    {
+      id: 'cashapp',
+      label: 'Cash App',
+      appScheme: (amount: number) => `cashapp://cash.app/pay?amount=${amount}&note=CareLog`,
+      webFallback: (amount: number) => `https://cash.app/pay?amount=${amount}`,
+    },
+    {
+      id: 'zelle',
+      label: 'Zelle',
+      appScheme: (amount: number) => `zelle://`,
+      webFallback: (amount: number) => `https://zellepay.com/`,
+    },
+    {
+      id: 'paypal',
+      label: 'PayPal',
+      appScheme: (amount: number) => `paypal://paypalme/?amount=${amount}`,
+      webFallback: (amount: number) => `https://paypal.me/?amount=${amount}`,
+    },
   ];
 
   const handleSendAppreciation = async () => {
@@ -123,10 +174,30 @@ export default function FamilyScreen() {
     // Try to open payment app
     const method = PAYMENT_OPTIONS.find((p) => p.id === (paymentMethod || 'venmo'));
     if (method) {
-      const url = method.urlScheme(selectedAmount);
-      const canOpen = await Linking.canOpenURL(url);
+      const appUrl = method.appScheme(selectedAmount);
+      const canOpen = await Linking.canOpenURL(appUrl);
+      
       if (canOpen) {
-        await Linking.openURL(url);
+        await Linking.openURL(appUrl);
+      } else if (Platform.OS === 'web') {
+        // On web, open the web fallback URL in a new tab
+        const webUrl = method.webFallback(selectedAmount);
+        if (typeof window !== 'undefined') {
+          window.open(webUrl, '_blank');
+        }
+      } else {
+        // Mobile fallback - open web version if app not installed
+        const webUrl = method.webFallback(selectedAmount);
+        const canOpenWeb = await Linking.canOpenURL(webUrl);
+        if (canOpenWeb) {
+          await Linking.openURL(webUrl);
+        } else {
+          Alert.alert(
+            'App Not Installed',
+            `${method.label} is not installed. Please install the app or select a different payment method.`
+          );
+          return;
+        }
       }
     }
 
@@ -141,7 +212,18 @@ export default function FamilyScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={Colors.primary}
+            colors={[Colors.primary]}
+          />
+        }
+      >
         <View style={styles.content}>
           <Text style={[Typography.sectionLabel, { color: Colors.accent.orange }]}>FAMILY PORTAL</Text>
           <Text style={[Typography.h1, { color: Colors.textPrimary, marginTop: 4 }]}>

@@ -9,6 +9,7 @@ import Typography from '@/constants/Typography';
 import Layout from '@/constants/Layout';
 import VisitCard from '@/components/VisitCard';
 import { useAppStore } from '@/store/useAppStore';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/services/supabase';
 import type { EVVStatus } from '@/types';
 
@@ -23,6 +24,7 @@ interface VisitRow {
 
 export default function VisitsScreen() {
   const user = useAppStore((s) => s.user);
+  const { userId, ready } = useAuth();
   const [visits, setVisits] = useState<VisitRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -32,7 +34,7 @@ export default function VisitsScreen() {
         const { data } = await supabase
           .from('visits')
           .select('id, recipient_id, clock_in_time, clock_out_time, evv_status, recipients(first_name, last_name, relationship)')
-          .eq('caregiver_id', user!.id)
+          .eq('caregiver_id', userId!)
           .order('created_at', { ascending: false })
           .limit(50);
         if (data) setVisits(data as VisitRow[]);
@@ -41,8 +43,9 @@ export default function VisitsScreen() {
       }
       setLoading(false);
     }
-    if (user?.id) loadVisits();
-  }, [user?.id]);
+    if (ready && userId) loadVisits();
+    else if (ready && !userId) setLoading(false);
+  }, [ready, userId]);
 
   const formatVisitDate = (clockIn: string, clockOut: string | null) => {
     const inDate = new Date(clockIn);

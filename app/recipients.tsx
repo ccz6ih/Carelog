@@ -25,6 +25,7 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import { IconCaregiver } from '@/components/icons/CareIcons';
 import { useAppStore } from '@/store/useAppStore';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/services/supabase';
 import { getAggregatorForState } from '@/services/evv';
 
@@ -41,6 +42,7 @@ interface RecipientRow {
 }
 
 export default function RecipientsScreen() {
+  const { userId, ready } = useAuth();
   const user = useAppStore((s) => s.user);
   const [recipients, setRecipients] = useState<RecipientRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,16 +58,18 @@ export default function RecipientsScreen() {
   const [state, setState] = useState('');
 
   useEffect(() => {
-    if (user?.id) loadRecipients();
-  }, [user?.id]);
+    if (ready && userId) loadRecipients();
+    else if (ready && !userId) setLoading(false);
+  }, [ready, userId]);
 
   async function loadRecipients() {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('recipients')
         .select('*')
-        .eq('caregiver_id', user!.id)
+        .eq('caregiver_id', userId!)
         .order('created_at', { ascending: true });
+      console.log('[Recipients] Loaded:', data?.length, 'Error:', error?.message);
       if (data) setRecipients(data);
     } catch (e) {
       console.error('[Recipients]', e);
@@ -91,14 +95,14 @@ export default function RecipientsScreen() {
       else if (name.includes('calevv')) aggregator = 'calevv';
     }
 
-    if (!user?.id) {
+    if (!userId) {
       alert('Not signed in. Please sign out and sign back in.');
       setSaving(false);
       return;
     }
 
     const insertData = {
-      caregiver_id: user.id,
+      caregiver_id: userId,
       first_name: firstName,
       last_name: lastName || '',
       relationship: relationship || 'family',

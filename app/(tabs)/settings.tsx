@@ -21,6 +21,7 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import { IconCaregiver, IconGroup, IconHeart, IconVisit, IconNurture, IconComfort } from '@/components/icons/CareIcons';
 import { useAppStore } from '@/store/useAppStore';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/services/supabase';
 
 interface SettingsRowProps {
@@ -58,6 +59,7 @@ function SettingsRow({ icon, label, value, onPress, isLast }: SettingsRowProps) 
 
 export default function SettingsScreen() {
   const { user, logout } = useAppStore();
+  const { userId, ready } = useAuth();
   const [recipientCount, setRecipientCount] = useState(0);
   const [familyCount, setFamilyCount] = useState(0);
 
@@ -66,13 +68,13 @@ export default function SettingsScreen() {
       const { count: rCount } = await supabase
         .from('recipients')
         .select('*', { count: 'exact', head: true })
-        .eq('caregiver_id', user?.id);
+        .eq('caregiver_id', userId!);
       if (rCount !== null) setRecipientCount(rCount);
 
       const { data: recipients } = await supabase
         .from('recipients')
         .select('id')
-        .eq('caregiver_id', user?.id);
+        .eq('caregiver_id', userId!);
       if (recipients && recipients.length > 0) {
         const ids = recipients.map((r) => r.id);
         const { count: fCount } = await supabase
@@ -82,8 +84,8 @@ export default function SettingsScreen() {
         if (fCount !== null) setFamilyCount(fCount);
       }
     }
-    if (user?.id) loadCounts();
-  }, [user?.id]);
+    if (ready && userId) loadCounts();
+  }, [ready, userId]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

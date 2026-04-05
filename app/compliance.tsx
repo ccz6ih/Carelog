@@ -22,6 +22,7 @@ import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import { useAppStore } from '@/store/useAppStore';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/services/supabase';
 import { getQueueCount, processQueue } from '@/services/evvQueue';
 
@@ -38,6 +39,7 @@ interface SubmissionRow {
 
 export default function ComplianceScreen() {
   const user = useAppStore((s) => s.user);
+  const { userId, ready } = useAuth();
   const [submissions, setSubmissions] = useState<SubmissionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ total: 0, success: 0, failed: 0, pending: 0 });
@@ -49,7 +51,7 @@ export default function ComplianceScreen() {
         const { data: visits } = await supabase
           .from('visits')
           .select('id')
-          .eq('caregiver_id', user!.id);
+          .eq('caregiver_id', userId!);
 
         if (visits && visits.length > 0) {
           const visitIds = visits.map((v) => v.id);
@@ -79,7 +81,7 @@ export default function ComplianceScreen() {
         const { count: pendingCount } = await supabase
           .from('visits')
           .select('*', { count: 'exact', head: true })
-          .eq('caregiver_id', user!.id)
+          .eq('caregiver_id', userId!)
           .in('evv_status', ['clocked_out', 'error']);
         setStats((prev) => ({ ...prev, pending: (pendingCount || 0) + count }));
       } catch (e) {
@@ -87,8 +89,9 @@ export default function ComplianceScreen() {
       }
       setLoading(false);
     }
-    if (user?.id) load();
-  }, [user?.id]);
+    if (ready && userId) load();
+    else if (ready && !userId) setLoading(false);
+  }, [ready, userId]);
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);

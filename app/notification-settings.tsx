@@ -19,6 +19,7 @@ import Typography from '@/constants/Typography';
 import Layout from '@/constants/Layout';
 import Card from '@/components/ui/Card';
 import { useAppStore } from '@/store/useAppStore';
+import { useAuth } from '@/hooks/useAuth';
 import { api } from '@/services';
 
 interface PrefItem {
@@ -61,13 +62,14 @@ const PREF_GROUPS: { title: string; items: PrefItem[] }[] = [
 
 export default function NotificationSettingsScreen() {
   const user = useAppStore((s) => s.user);
+  const { userId, ready } = useAuth();
   const [prefs, setPrefs] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       try {
-        const { data } = await api.notifications.getPreferences(user!.id);
+        const { data } = await api.notifications.getPreferences(userId!);
         if (data) {
           setPrefs({
             visit_started: data.visit_started,
@@ -86,13 +88,14 @@ export default function NotificationSettingsScreen() {
       }
       setLoading(false);
     }
-    if (user?.id) load();
-  }, [user?.id]);
+    if (ready && userId) load();
+    else if (ready && !userId) setLoading(false);
+  }, [ready, userId]);
 
   const togglePref = async (key: string) => {
     const newVal = !prefs[key];
     setPrefs((prev) => ({ ...prev, [key]: newVal }));
-    await api.notifications.updatePreferences(user?.id || '', { [key]: newVal });
+    await api.notifications.updatePreferences(userId || '', { [key]: newVal });
   };
 
   return (

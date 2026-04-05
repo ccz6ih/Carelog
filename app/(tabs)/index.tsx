@@ -24,6 +24,7 @@ import { useLocation } from '@/hooks/useLocation';
 import { submitEVV } from '@/services/evv';
 import { enqueueEVV, processQueue } from '@/services/evvQueue';
 import { logVisitStarted, logVisitCompleted } from '@/services/familyActivity';
+import { notifyFamilyMembers } from '@/services/notifications';
 import TaskLogger from '@/components/TaskLogger';
 import VisitNotes from '@/components/VisitNotes';
 import PhotoCapture from '@/components/PhotoCapture';
@@ -196,6 +197,14 @@ export default function DashboardScreen() {
           const ms = new Date(clockOutTime).getTime() - new Date(activeVisit.clockInTime).getTime();
           const durationStr = `${Math.floor(ms / 3600000)}h ${Math.floor((ms % 3600000) / 60000)}m`;
           await logVisitCompleted(recipient.id, activeVisit.id, user?.firstName || 'Caregiver', durationStr);
+          
+          // Notify family members
+          await notifyFamilyMembers(
+            recipient.id,
+            'visit_completed',
+            user?.firstName || 'Caregiver',
+            { duration: durationStr }
+          );
 
           setTimeout(() => endVisit(), 2500);
         } else {
@@ -253,6 +262,13 @@ export default function DashboardScreen() {
       });
 
       await logVisitStarted(recipient.id, newVisit.id, user?.firstName || 'Caregiver');
+      
+      // Notify family members
+      await notifyFamilyMembers(
+        recipient.id,
+        'visit_started',
+        user?.firstName || 'Caregiver'
+      );
     }
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Something went wrong';

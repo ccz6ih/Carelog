@@ -21,6 +21,7 @@ import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import { IconNurture } from '@/components/icons/CareIcons';
 import { useAppStore } from '@/store/useAppStore';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/services/supabase';
 import { AGGREGATORS, getAggregatorForState } from '@/services/evv';
 
@@ -36,6 +37,7 @@ interface RecipientEVV {
 
 export default function EVVConfigScreen() {
   const user = useAppStore((s) => s.user);
+  const { userId, ready } = useAuth();
   const [recipients, setRecipients] = useState<RecipientEVV[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -45,7 +47,7 @@ export default function EVVConfigScreen() {
         const { data } = await supabase
           .from('recipients')
           .select('id, first_name, relationship, state, aggregator, provider_id, recipient_id')
-          .eq('caregiver_id', user!.id)
+          .eq('caregiver_id', userId!)
           .eq('is_active', true);
         if (data) setRecipients(data);
       } catch (e) {
@@ -53,8 +55,9 @@ export default function EVVConfigScreen() {
       }
       setLoading(false);
     }
-    if (user?.id) load();
-  }, [user?.id]);
+    if (ready && userId) load();
+    else if (ready && !userId) setLoading(false);
+  }, [ready, userId]);
 
   const aggregatorNames: Record<string, string> = {
     hhax: 'HHAeXchange',
